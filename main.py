@@ -1,6 +1,6 @@
 import psycopg2.extras
 import os
-from dotenv import load_dotenv
+from dotenv import load_dotenv, dotenv_values
 import sql_queries
 import data_downloader
 import leagues
@@ -8,9 +8,9 @@ import leagues
 """Funkce, která nám zjistí, zda se tým nalezený na stránce(webscrapovaný tým), již nenachází v databází, pokud ne, vloží se do dtb."""
 def duplicity_check(my_cur, my_con, scraped_teams, dtb_teams):
     for team in scraped_teams:
-        parity_result = any(team.team_name == dtb_team["team_name"] for dtb_team in dtb_teams)
+        parity_result = any(team.team_url == dtb_team["elite_url"] for dtb_team in dtb_teams)
         if parity_result is False:
-            sql_queries.insert_data(my_con, my_cur, "teams", ["team_name", "league_id", "team_elite_url"], [team.team_name, team.league_id, team.team_ulr])
+            sql_queries.insert_data(my_con, my_cur, "teams", ["team_name", "league_id", "elite_url"], [team.team_name, team.league_id, team.team_ulr])
 
 
 
@@ -28,8 +28,9 @@ def main_menu(my_con, my_cur):
 
     elif user_choice == 2:
         dtb_returned_teams = sql_queries.get_data(my_cur, choosen_table="teams")
-        for team in dtb_returned_teams:
-            print(team["team_elite_url"])
+        # for team in dtb_returned_teams:
+        #     print(team["elite_url"])
+        scraped_players = data_downloader.players_url_download(dtb_returned_teams)
 
 
 if __name__ == "__main__":
