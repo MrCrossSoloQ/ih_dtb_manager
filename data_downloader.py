@@ -52,7 +52,7 @@ def players_url_download(teams):
             player_link = div_player.find("a", class_="TextLink_link__RhSiC")
             player_url = player_link.get("href")
             scraped_player = player_data_download(player_url, team["league_id"], team["team_id"])
-            print(scraped_player.surname, scraped_player.last_name, scraped_player.nationality, scraped_player.players_position, scraped_player.team_id, scraped_player.league_id, scraped_player.date_of_birth, scraped_player.player_elite_url)
+            print(scraped_player.surname, scraped_player.last_name, scraped_player.nationality, scraped_player.player_position, scraped_player.team_id, scraped_player.league_id, scraped_player.date_of_birth, scraped_player.url)
             list_of_players.append(scraped_player)
     return list_of_players
 

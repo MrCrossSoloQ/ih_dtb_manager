@@ -2,11 +2,11 @@ from bs4 import BeautifulSoup
 import requests
 import teams
 class Leagues:
-    def __init__(self, league_id, league_name, league_short_cut, league_elite_url, league_official_url):
+    def __init__(self, league_id, league_name, league_short_cut, url, league_official_url):
         self.league_id = league_id
         self.league_name = league_name
         self.league_short_cut = league_short_cut
-        self.league_elite_url = league_elite_url
+        self.url = url
         self.league_official_url = league_official_url
 
     # def teams_download(self, leagues):
