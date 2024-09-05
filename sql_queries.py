@@ -6,7 +6,7 @@ def get_data(my_cur, choosen_table):
             SELECT * FROM {table}
         """
     ).format(
-        table = sql.Identifier(choosen_table),
+        table = sql.Identifier(choosen_table)
     )
 
     my_cur.execute(my_query)

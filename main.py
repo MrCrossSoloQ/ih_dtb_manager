@@ -1,20 +1,17 @@
-from random import choice
-
 import psycopg2.extras
 import os
-from dotenv import load_dotenv, dotenv_values
+from dotenv import load_dotenv
 import sql_queries
 import data_downloader
-import leagues
 
 """Funkce, která nám zjistí, zda se tým nalezený na stránce(webscrapovaný tým), již nenachází v databází, pokud ne, vloží se do dtb."""
-def duplicity_check(my_cur, my_con, scraped_data, dtb_data, choice):
+def duplicity_check(my_cur, my_con, scraped_data, dtb_data, table):
     for item in scraped_data:
         parity_result = any(item.url == dtb_item["elite_url"] for dtb_item in dtb_data)
-        if parity_result is False and choice == 1:
+        if parity_result is False and table == "teams":
             sql_queries.insert_data(my_con, my_cur, "teams", ["team_name", "league_id", "elite_url"],
                                     [item.team_name, item.league_id, item.team_ulr])
-        elif parity_result is False and choice == 2:
+        elif parity_result is False and table == "players":
             sql_queries.insert_data(my_con, my_cur, "players", ["surname", "last_name", "nationality", "league_id", "player_position", "date_of_birth", "team_id", "elite_url"],
                                     [item.surname, item.last_name, item.nationality, item.league_id, item.player_position, item.date_of_birth, item.team_id, item.url])
         else:
@@ -23,22 +20,28 @@ def duplicity_check(my_cur, my_con, scraped_data, dtb_data, choice):
 def main_menu(my_con, my_cur):
     print("Správa databáze")
     print("[1] - Stažení/Aktualizace týmů v databázi: ")
-    print("[2] - Zobrazí týmy z databáze: ")
+    print("[2] - Stažení hráčů, do databáze: ")
     user_choice = int(input("Vyber následující hodnotu z nabídky: "))
     if user_choice == 1:
         dtb_returned_leagues = sql_queries.get_data(my_cur, choosen_table="leagues")
 
         scraped_teams = data_downloader.teams_download(dtb_returned_leagues)
         dtb_teams = sql_queries.get_data(my_cur, choosen_table="teams")
-        duplicity_check(my_cur, my_con, scraped_teams, dtb_teams, 1)
+        duplicity_check(my_cur, my_con, scraped_teams, dtb_teams, "teams")
 
     elif user_choice == 2:
+        dtb_returned_leagues = sql_queries.get_data(my_cur, choosen_table="leagues")
         dtb_returned_teams = sql_queries.get_data(my_cur, choosen_table="teams")
-        # for team in dtb_returned_teams:
-        #     print(team["elite_url"])
-        scraped_players = data_downloader.players_url_download(dtb_returned_teams)
+
+        for leagues in dtb_returned_leagues:
+            print(f'[{leagues["league_id"]}] - {leagues["league_short_cut"]}')
+        print("[0] - Stáhnout hráče, ze všech lig")
+        p_menu = int(input("Vyber hodnotu z nabídky: "))
+
+
+        scraped_players = data_downloader.players_url_download(dtb_returned_teams, p_menu)
         dtb_returned_players = sql_queries.get_data(my_cur, choosen_table="players")
-        duplicity_check(my_cur, my_con, scraped_players, dtb_returned_players, 2)
+        duplicity_check(my_cur, my_con, scraped_players, dtb_returned_players, "players")
 
 
 if __name__ == "__main__":
