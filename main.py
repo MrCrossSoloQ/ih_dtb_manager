@@ -3,17 +3,22 @@ import os
 from dotenv import load_dotenv
 import sql_queries
 import data_downloader
+import teams
 
 """Funkce, která nám zjistí, zda se tým nalezený na stránce(webscrapovaný tým), již nenachází v databází, pokud ne, vloží se do dtb."""
 def duplicity_check(my_cur, my_con, scraped_data, dtb_data, table):
     for item in scraped_data:
         parity_result = any(item.url == dtb_item["elite_url"] for dtb_item in dtb_data)
+
         if parity_result is False and table == "teams":
             sql_queries.insert_data(my_con, my_cur, "teams", ["team_name", "league_id", "elite_url"],
                                     [item.team_name, item.league_id, item.team_ulr])
         elif parity_result is False and table == "players":
             sql_queries.insert_data(my_con, my_cur, "players", ["surname", "last_name", "nationality", "league_id", "player_position", "date_of_birth", "team_id", "elite_url"],
                                     [item.surname, item.last_name, item.nationality, item.league_id, item.player_position, item.date_of_birth, item.team_id, item.url])
+        elif parity_result is True and table == "players":
+            dtb_players=sql_queries.get_data(my_cur,"players", "teams", ["players.*", "teams.team_name"],["players.team_id"], ["teams.team_id"])
+            print(dtb_players)
         else:
             print(f"Databáze již obsahuje položku: {item.url}")
 
@@ -27,6 +32,7 @@ def main_menu(my_con, my_cur):
 
         scraped_teams = data_downloader.teams_download(dtb_returned_leagues)
         dtb_teams = sql_queries.get_data(my_cur, choosen_table="teams")
+
         duplicity_check(my_cur, my_con, scraped_teams, dtb_teams, "teams")
 
     elif user_choice == 2:
