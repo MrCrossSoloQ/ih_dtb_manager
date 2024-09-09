@@ -10,6 +10,7 @@ def data_correct_check(my_con,my_cur, scraped_data):
     dtb_players=sql_queries.get_data_join_condition_results(my_cur,"players","teams","team_id","team_name","team_id","elite_url",scraped_data.url)
     for dtb_player in dtb_players:
         if dtb_player["team_id"] != scraped_data.team_id:
+            """V případě, že team_id v DTB neshoduje s team_id z webscrapu, dojde k aktualizaci v DTB"""
             sql_queries.update_data(my_con,my_cur,"players","team_id",scraped_data.team_id,"player_id",dtb_player["player_id"])
             print(f"Neaktualizovaný hráč: {dtb_player}")
             print(f"Aktuální data z webu: {scraped_data.last_name, scraped_data.team_id}")
