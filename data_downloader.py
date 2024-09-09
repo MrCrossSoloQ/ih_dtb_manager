@@ -68,6 +68,6 @@ def teams_download(leagues):
         soup = BeautifulSoup(web, "html.parser")
         found_teams = soup.find_all(name="a", class_="TextLink_link__RhSiC LabelWithIcon_link__67DL_ TableBody_link__dfR3c TableBody_plainText__KuMY7")
         for team in found_teams:
-            scraped_team = teams.Teams(league["league_id"], league["league_short_cut"], team.text, team.get("href"))
+            scraped_team = teams.Teams(league["league_id"], team.text, team.get("href"))
             teams_data.append(scraped_team)
     return teams_data
