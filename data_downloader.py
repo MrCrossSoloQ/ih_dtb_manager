@@ -45,16 +45,17 @@ def players_url_download(teams, choosen_league):
     return list_of_players
 
 
-def teams_download(leagues):
+def teams_download(leagues, choosen_league):
     teams_data = []
     for league in leagues:
-        print(league["elite_url"])
+        if league["league_id"] == choosen_league or choosen_league ==0:
+            print(league["elite_url"])
 
-        response = requests.get(league["elite_url"])
-        web = response.text
-        soup = BeautifulSoup(web, "html.parser")
-        found_teams = soup.find_all(name="a", class_="TextLink_link__RhSiC LabelWithIcon_link__67DL_ TableBody_link__dfR3c TableBody_plainText__KuMY7")
-        for team in found_teams:
-            scraped_team = teams.Teams(league["league_id"], team.text, team.get("href"))
-            teams_data.append(scraped_team)
+            response = requests.get(league["elite_url"])
+            web = response.text
+            soup = BeautifulSoup(web, "html.parser")
+            found_teams = soup.find_all(name="a", class_="TextLink_link__RhSiC LabelWithIcon_link__67DL_ TableBody_link__dfR3c TableBody_plainText__KuMY7")
+            for team in found_teams:
+                scraped_team = teams.Teams(league["league_id"], team.text, team.get("href"))
+                teams_data.append(scraped_team)
     return teams_data
