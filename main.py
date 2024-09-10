@@ -9,6 +9,14 @@ def league_choice(user_choice):
     dtb_returned_leagues = sql_queries.get_data_simple(my_cur, choosen_table="leagues")
     for leagues in dtb_returned_leagues:
         print(f'[{leagues["league_id"]}] - {leagues["league_short_cut"]}')
+    if user_choice == 1:
+        print("[0] - Stáhnout týmy, ze všech lig")
+        print("Vyber, ze které ligy, chceš aktualizovat/stáhnout týmy: ")
+    elif user_choice == 2:
+        print("[0] - Stáhnout hráče, ze všech lig")
+        print("Vyber, ze které ligy, chceš aktualizovat/stáhnout data hráčů: ")
+    inner_menu = int(input("Vyber hodnotu z nabídky: "))
+    return inner_menu
 
 def main_menu(my_con, my_cur):
     print("Správa databáze")
@@ -17,12 +25,10 @@ def main_menu(my_con, my_cur):
     user_choice = int(input("Vyber následující hodnotu z nabídky: "))
 
     if user_choice == 1:
-        print("Vyber, ze které ligy, chceš aktualizovat/stáhnout týmy")
-        league_choice()
-        print("[0] - Stáhnout týmy, ze všech lig")
-        l_menu = int(input("Vyber hodnotu z nabídky: "))
+        inner_choice = league_choice(user_choice)
+
         dtb_returned_leagues = sql_queries.get_data_simple(my_cur, choosen_table="leagues")
-        scraped_teams = data_downloader.teams_download(dtb_returned_leagues, l_menu)
+        scraped_teams = data_downloader.teams_download(dtb_returned_leagues, inner_choice)
         dtb_teams = sql_queries.get_data_simple(my_cur, choosen_table="teams")
 
         teams_duplicity_object = duplicity_checker.DuplicityChecker(dtb_teams, scraped_teams)
@@ -31,13 +37,10 @@ def main_menu(my_con, my_cur):
             sql_queries.insert_data(my_con, my_cur, "teams",["team_name", "league_id", "elite_url"], [team_duplicity_result.team_name, team_duplicity_result.league_id, team_duplicity_result.url])
 
     elif user_choice == 2:
-        print("Vyber, ze které ligy, chceš aktualizovat/stáhnout data hráčů")
-        league_choice()
-        print("[0] - Stáhnout hráče, ze všech lig")
-        p_menu = int(input("Vyber hodnotu z nabídky: "))
+        inner_choice = league_choice(user_choice)
 
         dtb_returned_teams = sql_queries.get_data_simple(my_cur, choosen_table="teams")
-        scraped_players = data_downloader.players_url_download(dtb_returned_teams, p_menu)
+        scraped_players = data_downloader.players_url_download(dtb_returned_teams, inner_choice)
 
         dtb_returned_players = sql_queries.get_data_simple(my_cur, choosen_table="players")
         players_duplicity_object = duplicity_checker.DuplicityChecker(dtb_returned_players, scraped_players, my_con=my_con, my_cur = my_cur)
