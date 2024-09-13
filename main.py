@@ -6,21 +6,38 @@ import data_downloader
 import duplicity_checker
 
 def league_choice(user_choice):
-    dtb_returned_leagues = sql_queries.get_data_simple(my_cur, choosen_table="leagues")
-    for leagues in dtb_returned_leagues:
-        print(f'[{leagues["league_id"]}] - {leagues["league_short_cut"]}')
-    if user_choice == 1:
-        print("[0] - Stáhnout týmy, ze všech lig")
-        print("Vyber, ze které ligy, chceš aktualizovat/stáhnout týmy: ")
-    elif user_choice == 2:
-        print("[0] - Stáhnout hráče, ze všech lig")
-        print("Vyber, ze které ligy, chceš aktualizovat/stáhnout data hráčů: ")
-    inner_menu = int(input("Vyber hodnotu z nabídky: "))
-    return inner_menu
+    while True:
+        try:
+            dtb_returned_leagues = sql_queries.get_data_simple(my_cur, choosen_table="leagues")
+            leagues_counter = len(dtb_returned_leagues)
+
+            print("[00] - Zpět")
+            for leagues in dtb_returned_leagues:
+                print(f'[{leagues["league_id"]}] - {leagues["league_short_cut"]}')
+            if user_choice == 1:
+                print("[0] - Stáhnout týmy, ze všech lig")
+                print("Vyber, ze které ligy, chceš aktualizovat/stáhnout týmy: ")
+            elif user_choice == 2:
+                print("[0] - Stáhnout hráče, ze všech lig")
+                print("Vyber, ze které ligy, chceš aktualizovat/stáhnout data hráčů: ")
+            inner_menu = int(input("Vyber hodnotu z nabídky: "))
+
+            """V případě, že je zadaná hodnota mimo hodnoty z nabídky, cyklus se spustí znovu"""
+            if inner_menu < 0 or inner_menu > leagues_counter:
+                print("Vybrat můžeš pouze hodnoty z nabídky!")
+                continue
+            if inner_menu == 00:
+                break
+
+            return inner_menu
+
+        except ValueError:
+            print("Zadat můžeš pouze čísla!")
 
 def main_menu(my_con, my_cur):
     while True:
         try:
+            print("---------------------------------------------------")
             print("Správa databáze")
             print("[1] - Stažení/Aktualizace týmů v databázi ")
             print("[2] - Stažení hráčů, do databáze ")
