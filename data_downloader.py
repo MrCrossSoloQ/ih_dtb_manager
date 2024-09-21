@@ -4,12 +4,17 @@ import teams
 from urllib.parse import urljoin
 import player
 
-def player_data_download(player_url, league_id, team_id):
-    full_url = urljoin("https://www.eliteprospects.com/", player_url)
-
+"""Funkce, která stáhne obsah webu, převede na bf4 objekt. Obsah stránky je následně parsován jako html"""
+def page_download(full_url):
     response = requests.get(full_url)
     web = response.text
     soup = BeautifulSoup(web, "html.parser")
+    return soup
+
+def player_data_download(player_url, league_id, team_id):
+    full_url = urljoin("https://www.eliteprospects.com/", player_url)
+
+    soup = page_download(full_url)
     header = soup.find("h1", class_="Profile_headerMain__WPgYE")
 
     player_surname = header.text.split()[0]
@@ -32,9 +37,8 @@ def players_url_download(teams, choosen_league):
     full_url = urljoin("https://www.eliteprospects.com/", teams[0]["elite_url"])
     print(full_url)
 
-    response = requests.get(full_url)
-    web = response.text
-    soup = BeautifulSoup(web, "html.parser")
+    soup = page_download(full_url)
+
     found_div = soup.find_all("div", class_="Roster_player__e6EbP")
     for div_player in found_div:
         player_link = div_player.find("a", class_="TextLink_link__RhSiC")
@@ -51,9 +55,7 @@ def teams_download(leagues, choosen_league):
         if league["league_id"] == choosen_league or choosen_league ==0:
             print(league["elite_url"])
 
-            response = requests.get(league["elite_url"])
-            web = response.text
-            soup = BeautifulSoup(web, "html.parser")
+            soup = page_download(league["elite_url"])
             found_teams = soup.find_all(name="a", class_="TextLink_link__RhSiC LabelWithIcon_link__67DL_ TableBody_link__dfR3c TableBody_plainText__KuMY7")
             for team in found_teams:
                 scraped_team = teams.Teams(league["league_id"], team.text, team.get("href"))
