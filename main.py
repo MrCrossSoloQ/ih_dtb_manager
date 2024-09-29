@@ -33,7 +33,7 @@ def league_choice(user_choice):
         if inner_menu == "R":
             return "R"
 
-        return inner_menu
+        return int(inner_menu)
 
 def main_menu(my_con, my_cur):
     while True:
@@ -103,4 +103,3 @@ if __name__ == "__main__":
 
     ) as my_con, my_con.cursor(cursor_factory = psycopg2.extras.DictCursor) as my_cur:
         main_menu(my_con, my_cur)
-
