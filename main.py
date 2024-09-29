@@ -7,32 +7,33 @@ import duplicity_checker
 
 def league_choice(user_choice):
     while True:
-        try:
-            dtb_returned_leagues = sql_queries.get_data_simple(my_cur, choosen_table="leagues")
-            leagues_counter = len(dtb_returned_leagues)
+        dtb_returned_leagues = sql_queries.get_data_simple(my_cur, choosen_table="leagues")
+        id_list = ["R","0"]
 
-            print("[00] - Zpět")
-            for leagues in dtb_returned_leagues:
-                print(f'[{leagues["league_id"]}] - {leagues["league_short_cut"]}')
-            if user_choice == 1:
-                print("[0] - Stáhnout týmy, ze všech lig")
-                print("Vyber, ze které ligy, chceš aktualizovat/stáhnout týmy: ")
-            elif user_choice == 2:
-                print("[0] - Stáhnout hráče, ze všech lig")
-                print("Vyber, ze které ligy, chceš aktualizovat/stáhnout data hráčů: ")
-            inner_menu = int(input("Vyber hodnotu z nabídky: "))
+        print("[R] - Zpět")
+        for leagues in dtb_returned_leagues:
+            id_list.append(str(leagues["league_id"]))
+            print(f'[{leagues["league_id"]}] - {leagues["league_short_cut"]}')
+        if user_choice == 1:
+            print("[0] - Stáhnout týmy, ze všech lig")
+            print("Vyber, ze které ligy, chceš aktualizovat/stáhnout týmy: ")
+        elif user_choice == 2:
+            print("[0] - Stáhnout hráče, ze všech lig")
+            print("Vyber, ze které ligy, chceš aktualizovat/stáhnout data hráčů: ")
+        elif user_choice ==3:
+            print("[0] - Stáhnout výsledky zápasů, ze všech lig")
+            print("Vyber, ze které ligy, chceš stáhnout výsledky zápasů: ")
+        print(id_list)
+        inner_menu = input("Vyber hodnotu z nabídky: ").upper()
 
-            """V případě, že je zadaná hodnota mimo hodnoty z nabídky, cyklus se spustí znovu"""
-            if inner_menu < 0 or inner_menu > leagues_counter:
-                print("Vybrat můžeš pouze hodnoty z nabídky!")
-                continue
-            if inner_menu == 00:
-                break
+        """V případě, že je zadaná hodnota mimo hodnoty z nabídky, cyklus se spustí znovu"""
+        if inner_menu not in id_list:
+            print("Vybrat můžeš pouze hodnoty z nabídky!")
+            continue
+        if inner_menu == "R":
+            return "R"
 
-            return inner_menu
-
-        except ValueError:
-            print("Zadat můžeš pouze čísla!")
+        return int(inner_menu)
 
 def main_menu(my_con, my_cur):
     while True:
@@ -41,14 +42,17 @@ def main_menu(my_con, my_cur):
             print("Správa databáze")
             print("[1] - Stažení/Aktualizace týmů v databázi ")
             print("[2] - Stažení hráčů, do databáze ")
+            print("[3] - Stažení výsledků zápasů, do databáze ")
             print("[0] - Konec")
             user_choice = int(input("Vyber následující hodnotu z nabídky: "))
 
-            if user_choice < 0 or user_choice > 2:
+            if user_choice < 0 or user_choice > 3:
                 print("Zadaná hodnota se nenachází v nabídce!")
 
             elif user_choice == 1:
                 inner_choice = league_choice(user_choice)
+                if inner_choice == "R":
+                    continue
 
                 dtb_returned_leagues = sql_queries.get_data_simple(my_cur, choosen_table="leagues")
                 scraped_teams = data_downloader.teams_download(dtb_returned_leagues, inner_choice)
@@ -61,6 +65,8 @@ def main_menu(my_con, my_cur):
 
             elif user_choice == 2:
                 inner_choice = league_choice(user_choice)
+                if inner_choice == "R":
+                    continue
 
                 dtb_returned_teams = sql_queries.get_data_simple(my_cur, choosen_table="teams")
                 scraped_players = data_downloader.players_url_download(dtb_returned_teams, inner_choice)
@@ -70,6 +76,14 @@ def main_menu(my_con, my_cur):
                 p_duplicity_result = players_duplicity_object.dtb_duplicity_check(table="players")
                 if p_duplicity_result is not None:
                     sql_queries.insert_data(my_con, my_cur, "players", ["surname", "last_name", "nationality", "league_id", "player_position", "date_of_birth", "team_id", "elite_url"],[p_duplicity_result.surname, p_duplicity_result.last_name, p_duplicity_result.nationality, p_duplicity_result.league_id, p_duplicity_result.player_position, p_duplicity_result.date_of_birth, p_duplicity_result.team_id, p_duplicity_result.url])
+
+            elif user_choice ==3:
+                inner_choice = league_choice(user_choice)
+                if inner_choice == "R":
+                    continue
+
+                dtb_returned_leagues = sql_queries.get_data_simple(my_cur, choosen_table="leagues")
+                dtb_returned_teams = sql_queries.get_data_simple(my_cur, choosen_table="teams")
 
             elif user_choice == 0:
                 print("Neplecha ukončena!")
@@ -89,4 +103,3 @@ if __name__ == "__main__":
 
     ) as my_con, my_con.cursor(cursor_factory = psycopg2.extras.DictCursor) as my_cur:
         main_menu(my_con, my_cur)
-
