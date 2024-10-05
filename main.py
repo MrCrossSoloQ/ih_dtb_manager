@@ -4,6 +4,8 @@ from dotenv import load_dotenv
 import sql_queries
 import data_downloader
 import duplicity_checker
+import game_stats_downloader
+import const
 
 def league_choice(user_choice):
     while True:
@@ -85,11 +87,13 @@ def main_menu(my_con, my_cur):
                 dtb_returned_leagues = sql_queries.get_data_simple(my_cur, choosen_table="leagues")
                 dtb_returned_teams = sql_queries.get_data_simple(my_cur, choosen_table="teams")
 
+                scraped_games = game_stats_downloader.downloader_manager(dtb_returned_leagues[1][const.SCHEDULE_URL_SOURCE], dtb_returned_teams)
+
             elif user_choice == 0:
                 print("Neplecha ukončena!")
                 break
 
-        except ValueError as e:
+        except ValueError:
             print("Zadat můžeš pouze číslo!")
 
 if __name__ == "__main__":
