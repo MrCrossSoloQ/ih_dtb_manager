@@ -1,26 +1,34 @@
+from http.cookiejar import join_header_words
+
 import requests
 from urllib.parse import urljoin
 import json
 from datetime import datetime, timedelta
 import ih_games
 
+"""Vygeneruje dnešní datum a po odečtu vrátí včerejší"""
 def get_date():
     today = datetime.today()
     yesterday_date_only = today.date() - timedelta(days=1)
     return yesterday_date_only
 
+"""Spojením url + včerejšího data, vrátí url s výsledky včerejších zápasů + rozpis zápasů na 7 dní"""
 def get_schedule_url(yesterday_date_only, league_url_source):
     yesterday_game_sheet_url = urljoin(league_url_source, str(yesterday_date_only))
     return yesterday_game_sheet_url
 
+
+"""Zašleme požadavek na server zadané URL, vrátí se nám objekt response s několika atributy"""
 def url_content_downloader(url):
     response = requests.get(url)
-    data = response.json()
+    data = response.json() #pokud server vrátí obsah stránky ve formátu json, převedeme je na dictionary
     return data
 
+"""Funkce která nám získá id her, které byly odehrány pouze za včerejšího data a vrátí nám je jako list"""
 def todays_games(data, date):
     game_ids = []
     for gameweek in data["gameWeek"]:
+        # print(gameweek)
         if gameweek["date"] == str(date):
             for game in gameweek["games"]:
                 game_ids.append(game["id"])
@@ -28,6 +36,7 @@ def todays_games(data, date):
     print(game_ids)
     return game_ids
 
+"""Funkce, která ze stažených id zápasů, vytvoří odkaz ke statistikám daného zápasu a vrátí je jako list"""
 def game_stats(game_ids):
     list_of_game_urls = []
     for game_id in game_ids:
@@ -39,9 +48,12 @@ def game_stats(game_ids):
 #     for player_stats in game_result["playerByGameStats"]["awayTeam"]["defense"]:
 #         print(player_stats["name"]['default'])
 
+"""Funkce, která vezme stažený obsah stránky, každého zápasu, který je jako dictionary a vytahá z něj potřebné údaje, které poukládá do proměnných"""
 def game_result_sheet(game_urls, dtb_returned_teams):
     game_list = []
     for game_url in game_urls:
+        print("---------------------------------------------------------------")
+        print(f"URL zápasu: {game_url}")
         downloaded_content = url_content_downloader(game_url)
         # print(json.dumps(downloaded_content, indent=4))
 
@@ -55,12 +67,12 @@ def game_result_sheet(game_urls, dtb_returned_teams):
         match_date = downloaded_content["gameDate"]
         web_game_id = downloaded_content["id"]
 
-        print("---------------------------------------------------------------")
         dtb_home_team = dtb_team_searcher(home_team_name, dtb_returned_teams)
         dtb_away_team = dtb_team_searcher(away_team_name, dtb_returned_teams)
         season_stage = get_season_stage(game_type)
         winner_team = get_winner(dtb_home_team, home_team_score, dtb_away_team, away_team_score)
 
+        """Z daných údajů ze zápasu, vytvoří objekt podle třídy IhGames uloží ho do proměnné a přidá do listu"""
         new_game = ih_games.IhGames(dtb_home_team["team_id"], dtb_away_team["team_id"], home_team_score, away_team_score, result_type, dtb_home_team["league_id"], winner_team["team_id"], match_date, season, season_stage, web_game_id)
         game_list.append(new_game)
 
@@ -73,9 +85,9 @@ def game_result_sheet(game_urls, dtb_returned_teams):
         print(home_team_score)
         print(result_type)
 
-        return game_list
+    return game_list
 
-"""Not done yet"""
+"""Funkce, která zjistí, který tým vyhrál zápas, následně vrátí vítězný tým s údají z dtb"""
 def get_winner(dtb_home_team, home_team_score, dtb_away_team, away_team_score):
     if home_team_score > away_team_score:
         return dtb_home_team
@@ -93,11 +105,26 @@ def get_season_stage(game_type):
 
 """Funkce, do které pošleme název týmu ze zápasu a podle jeho názvu hledá shodu s týmem, který byl vrácen z DTB, když najde vrátí ho"""
 def dtb_team_searcher(team_name, dtb_returned_teams):
+    corrected_team_name = team_name_correction(team_name)
     for dtb_team in dtb_returned_teams:
-        if dtb_team["team_name"] == team_name:
+        if dtb_team["team_name"] == corrected_team_name:
             print(dtb_team)
             print(f"Index teamu v listu je: {dtb_returned_teams.index(dtb_team)}")
             return dtb_team
+
+    return print(f"Team: {team_name} nenalezen")
+
+"Pokud se ve staženém názvu teamu opakuje nějaké slovo dojde k jeho odstranění"
+def team_name_correction(team_name):
+    word_list = team_name.split()
+    uniq_word_list = []
+    for word in word_list:
+        if word not in uniq_word_list:
+            uniq_word_list.append(word)
+    corrected_team_name = " ".join(uniq_word_list)
+    print(len(corrected_team_name))
+    print(corrected_team_name)
+    return corrected_team_name
 
 def downloader_manager(url_source, dtb_returned_teams):
     yesterday_date = get_date()

@@ -61,9 +61,7 @@ def main_menu(my_con, my_cur):
                 dtb_teams = sql_queries.get_data_simple(my_cur, choosen_table="teams")
 
                 teams_duplicity_object = duplicity_checker.DuplicityChecker(dtb_teams, scraped_teams)
-                team_duplicity_result = teams_duplicity_object.dtb_duplicity_check()
-                if team_duplicity_result is not None:
-                    sql_queries.insert_data(my_con, my_cur, "teams",["team_name", "league_id", "elite_url"], [team_duplicity_result.team_name, team_duplicity_result.league_id, team_duplicity_result.url])
+                teams_duplicity_object.dtb_duplicity_check()
 
             elif user_choice == 2:
                 inner_choice = league_choice(user_choice)
@@ -75,19 +73,20 @@ def main_menu(my_con, my_cur):
 
                 dtb_returned_players = sql_queries.get_data_simple(my_cur, choosen_table="players")
                 players_duplicity_object = duplicity_checker.DuplicityChecker(dtb_returned_players, scraped_players, my_con=my_con, my_cur = my_cur)
-                p_duplicity_result = players_duplicity_object.dtb_duplicity_check(table="players")
-                if p_duplicity_result is not None:
-                    sql_queries.insert_data(my_con, my_cur, "players", ["surname", "last_name", "nationality", "league_id", "player_position", "date_of_birth", "team_id", "elite_url"],[p_duplicity_result.surname, p_duplicity_result.last_name, p_duplicity_result.nationality, p_duplicity_result.league_id, p_duplicity_result.player_position, p_duplicity_result.date_of_birth, p_duplicity_result.team_id, p_duplicity_result.url])
+                players_duplicity_object.dtb_duplicity_check(table="players")
 
             elif user_choice ==3:
-                inner_choice = league_choice(user_choice)
+                inner_choice = league_choice(user_choice) #Je jedno jestli zadáš 0,1,2 .. zatím
                 if inner_choice == "R":
                     continue
 
-                dtb_returned_leagues = sql_queries.get_data_simple(my_cur, choosen_table="leagues")
-                dtb_returned_teams = sql_queries.get_data_simple(my_cur, choosen_table="teams")
+                dtb_returned_leagues = sql_queries.get_data_simple(my_cur, "leagues")
+                dtb_returned_teams = sql_queries.get_data_simple(my_cur, "teams")
+                dtb_returned_games = sql_queries.get_data_simple(my_cur, "ih_games")
 
                 scraped_games = game_stats_downloader.downloader_manager(dtb_returned_leagues[1][const.SCHEDULE_URL_SOURCE], dtb_returned_teams)
+                g_duplicity_object = duplicity_checker.GameDuplicityChecker(dtb_returned_games, scraped_games, my_con, my_cur)
+                g_duplicity_object.dtb_duplicity_check()
 
             elif user_choice == 0:
                 print("Neplecha ukončena!")
