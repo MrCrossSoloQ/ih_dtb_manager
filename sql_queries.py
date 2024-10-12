@@ -53,10 +53,27 @@ def get_data_simple(my_cur, choosen_table):
         """
     ).format(
         table = sql.Identifier(choosen_table)
+            )
+
+    my_cur.execute(my_query)
+    recieved_data = my_cur.fetchall()
+    return recieved_data
+
+def get_data_where_conditions_results(my_cur, choosen_table, condition_column, condition_value):
+    my_query = sql.SQL(
+        """
+        SELECT * FROM {}
+        WHERE {} = {}
+        """
+    ).format(
+        sql.Identifier(choosen_table),
+        sql.Identifier(condition_column),
+        sql.Literal(condition_value)
     )
 
     my_cur.execute(my_query)
     recieved_data = my_cur.fetchall()
+
     return recieved_data
 
 def insert_data(my_con, my_cur, choosen_table, columns, values):

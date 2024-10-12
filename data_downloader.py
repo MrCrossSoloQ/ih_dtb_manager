@@ -17,9 +17,9 @@ def player_data_download(player_url, league_id, team_id):
     soup = page_download(full_url)
     header = soup.find("h1", class_="Profile_headerMain__WPgYE")
 
-    player_surname = header.text.split()[0]
-    player_last_name = header.text.split()[1]
-    country = header.find('img')['title']
+    player_surname = header.text.split()[0] #uloží křestní jméno hráče
+    player_last_name = header.text.split()[1] #Uloží příjmení hráče
+    country = header.find('img')['title'] #uloží zemi hráče
 
     player_facts = soup.find("ul", class_="PlayerFacts_factsList__Xw_ID")
     all_li = player_facts.find_all("li")
@@ -34,7 +34,7 @@ def players_url_download(teams, choosen_league):
     list_of_players = []
     # for team in teams:
     #     if team["league_id"] == choosen_league or choosen_league ==0:
-    full_url = urljoin("https://www.eliteprospects.com/", teams[0]["elite_url"])
+    full_url = urljoin("https://www.eliteprospects.com/", teams[0]["elite_url"]) #zde přepiš na team["elite_url"] a dej tabulator
     print(full_url)
 
     soup = page_download(full_url)
