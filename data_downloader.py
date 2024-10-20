@@ -34,7 +34,7 @@ def players_url_download(teams, choosen_league):
     list_of_players = []
     # for team in teams:
     #     if team["league_id"] == choosen_league or choosen_league ==0:
-    full_url = urljoin("https://www.eliteprospects.com/", teams[0]["elite_url"]) #zde přepiš na team["elite_url"] a dej tabulator
+    full_url = urljoin("https://www.eliteprospects.com/", teams[0]["elite_url"]) #zde přepiš na team["elite_url"] a dej 2x tabulator, na zbylý blok funkce + odkomentovat cyklus for
     print(full_url)
 
     soup = page_download(full_url)
