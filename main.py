@@ -25,7 +25,7 @@ def league_choice(user_choice):
         elif user_choice ==3:
             print("[0] - Stáhnout výsledky zápasů, ze všech lig")
             print("Vyber, ze které ligy, chceš stáhnout výsledky zápasů: ")
-        print(id_list)
+
         inner_menu = input("Vyber hodnotu z nabídky: ").upper()
 
         """V případě, že je zadaná hodnota mimo hodnoty z nabídky, cyklus se spustí znovu"""
@@ -83,10 +83,11 @@ def main_menu(my_con, my_cur):
                 dtb_returned_leagues = sql_queries.get_data_simple(my_cur, "leagues")
                 dtb_returned_teams = sql_queries.get_data_simple(my_cur, "teams")
                 dtb_returned_games = sql_queries.get_data_simple(my_cur, "ih_games")
+                dtb_returned_players = sql_queries.get_data_simple(my_cur, choosen_table="players")
 
-                scraped_games = game_stats_downloader.downloader_manager(dtb_returned_leagues[1][const.SCHEDULE_URL_SOURCE], dtb_returned_teams)
-                g_duplicity_object = duplicity_checker.GameDuplicityChecker(dtb_returned_games, scraped_games, my_con, my_cur)
-                g_duplicity_object.dtb_duplicity_check()
+                scraped_games = game_stats_downloader.downloader_manager(dtb_returned_leagues[1][const.SCHEDULE_URL_SOURCE], dtb_returned_teams, dtb_returned_games, dtb_returned_players) #dtb_returned_leagues[1] prozatím nastaveno na první index
+                # g_duplicity_object = duplicity_checker.GameDuplicityChecker(dtb_returned_games, scraped_games, my_con, my_cur)
+                # g_duplicity_object.dtb_duplicity_check()
 
             elif user_choice == 0:
                 print("Neplecha ukončena!")
