@@ -32,20 +32,20 @@ def player_data_download(player_url, league_id, team_id):
 
 def players_url_download(teams, choosen_league):
     list_of_players = []
-    # for team in teams:
-    #     if team["league_id"] == choosen_league or choosen_league ==0:
-    full_url = urljoin("https://www.eliteprospects.com/", teams[0]["elite_url"]) #zde přepiš na team["elite_url"] a dej 2x tabulator, na zbylý blok funkce + odkomentovat cyklus for
-    print(full_url)
+    for team in teams:
+        if team["league_id"] == choosen_league or choosen_league ==0:
+            full_url = urljoin("https://www.eliteprospects.com/", team["elite_url"]) #zde přepiš na team["elite_url"] a dej 2x tabulator, na zbylý blok funkce + odkomentovat cyklus for
+            print(full_url)
 
-    soup = page_download(full_url)
+            soup = page_download(full_url)
 
-    found_div = soup.find_all("div", class_="Roster_player__e6EbP")
-    for div_player in found_div:
-        player_link = div_player.find("a", class_="TextLink_link__RhSiC")
-        player_url = player_link.get("href")
-        scraped_player = player_data_download(player_url, teams[0]["league_id"], teams[0]["team_id"])
-        print(scraped_player.surname, scraped_player.last_name, scraped_player.nationality, scraped_player.player_position, scraped_player.team_id, scraped_player.league_id, scraped_player.date_of_birth, scraped_player.url)
-        list_of_players.append(scraped_player)
+            found_div = soup.find_all("div", class_="Roster_player__e6EbP")
+            for div_player in found_div:
+                player_link = div_player.find("a", class_="TextLink_link__RhSiC")
+                player_url = player_link.get("href")
+                scraped_player = player_data_download(player_url, team["league_id"], team["team_id"])
+                print(scraped_player.surname, scraped_player.last_name, scraped_player.nationality, scraped_player.player_position, scraped_player.team_id, scraped_player.league_id, scraped_player.date_of_birth, scraped_player.url)
+                list_of_players.append(scraped_player)
     return list_of_players
 
 

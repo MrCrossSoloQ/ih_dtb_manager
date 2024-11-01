@@ -1,5 +1,5 @@
 class IhGames:
-    def __init__(self, home_team_id, away_team_id, home_score, away_score, result_type, league_id, winner_team_id, match_date, season, season_stage, web_game_id):
+    def __init__(self, home_team_id, away_team_id, home_score, away_score, result_type, league_id, winner_team_id, match_date, season, season_stage, web_game_id, players_stats_list, goalies_stats_list):
         self.home_team_id = home_team_id
         self.away_team_id = away_team_id
         self.home_score = home_score
@@ -11,3 +11,5 @@ class IhGames:
         self.season = season
         self.season_stage = season_stage
         self.web_game_id = web_game_id
+        self.players_stats_list = players_stats_list
+        self.goalies_stats_list = goalies_stats_list

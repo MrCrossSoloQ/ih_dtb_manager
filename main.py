@@ -84,13 +84,22 @@ def main_menu(my_con, my_cur):
                 dtb_returned_leagues = sql_queries.get_data_simple(my_cur, "leagues")
                 dtb_returned_teams = sql_queries.get_data_simple(my_cur, "teams")
                 dtb_returned_games = sql_queries.get_data_simple(my_cur, "ih_games")
+                dtb_returned_players = sql_queries.get_data_simple(my_cur, "players")
 
-                dtb_returned_players = sql_queries.get_data_simple(my_cur, choosen_table="players")
+                scraped_games = game_stats_downloader.downloader_manager(dtb_returned_leagues[1]["schedule_url_source"], dtb_returned_teams, dtb_returned_games, dtb_returned_players) #dtb_returned_leagues[1] prozatím nastaveno na první index
+                print(scraped_games)
 
-                scraped_games = game_stats_downloader.downloader_manager(dtb_returned_leagues[1][const.SCHEDULE_URL_SOURCE], dtb_returned_teams, dtb_returned_games, dtb_returned_players) #dtb_returned_leagues[1] prozatím nastaveno na první index
-                """Zatím nechci, aby se mi DTB plnila zápasy, tak zakomentováno"""
-                # g_duplicity_object = duplicity_checker.GameDuplicityChecker(dtb_returned_games, scraped_games, my_con, my_cur)
-                # g_duplicity_object.dtb_duplicity_check()
+                g_duplicity_object = duplicity_checker.DuplicityChecker(dtb_returned_games, scraped_games, my_con, my_cur)
+                g_duplicity_object.dtb_game_duplicity_check()
+
+
+                dtb_returned_games = sql_queries.get_data_simple(my_cur, "ih_games")
+                dtb_returned_players_game_sheet = sql_queries.get_data_simple(my_cur, "player_game_sheet")
+                dtb_returned_goalies_game_sheet = sql_queries.get_data_simple(my_cur, "goalie_game_sheet")
+
+                g_duplicity_object = duplicity_checker.GameDuplicityChecker(dtb_returned_players_game_sheet, dtb_returned_goalies_game_sheet, dtb_returned_games, scraped_games, my_con, my_cur,)
+                g_duplicity_object.dtb_duplicity_game_sheet_check("player_game_sheet", "player")
+                g_duplicity_object.dtb_duplicity_game_sheet_check("goalie_game_sheet", "goalie")
 
             elif user_choice == 0:
                 print("Neplecha ukončena!")

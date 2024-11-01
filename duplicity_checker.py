@@ -8,6 +8,15 @@ class DuplicityChecker:
         self.my_con = my_con
         self.my_cur = my_cur
 
+    """Metoda, která nám ověří, zda již je zápas s výsledkem uložený v dtb, podle unikátního čísla web_game_id"""
+    def dtb_game_duplicity_check(self):
+        web_game_id_list = [dtb_item["web_game_id"] for dtb_item in self.dtb_data]
+        for scraped_data_item in self.scraped_data:
+            if scraped_data_item.web_game_id not in web_game_id_list:
+                sql_queries.insert_data(self.my_con, self.my_cur, const.IH_GAMES, ["home_team_id", "away_team_id", "home_score", "away_score", "result_type", "league_id", "winner_team_id", "match_date", "season", "season_stage", "web_game_id"], [scraped_data_item.home_team_id, scraped_data_item.away_team_id, scraped_data_item.home_score, scraped_data_item.away_score, scraped_data_item.result_type, scraped_data_item.league_id, scraped_data_item.winner_team_id, scraped_data_item.match_date, scraped_data_item.season, scraped_data_item.season_stage, scraped_data_item.web_game_id])
+            else:
+                print(f"Hra: {scraped_data_item.web_game_id}, se již nachází v DTB!")
+
     """V případě, že se DTB nachází hráč, který byl znovu stažený z webu, dojde k ověření, zda tým ve kterém hraje je aktuální."""
     def data_correctness_check(self, scraped_data_item):
         dtb_player_stats = sql_queries.get_data_join_condition_results(self.my_cur, "players","teams","team_id","team_name","team_id","elite_url", scraped_data_item.url)
@@ -38,13 +47,31 @@ class DuplicityChecker:
                 print(f"V DTB se url adresa: {scraped_data_item.url} NACHÁZÍ")
 
 class GameDuplicityChecker(DuplicityChecker):
-    def __init__(self, dtb_data, scraped_data, my_con = None, my_cur = None):
+    def __init__(self, dtb_data, dtb_data2, dtb_returned_games, scraped_data, my_con = None, my_cur = None):
         super().__init__(dtb_data, scraped_data, my_con, my_cur)
+        self.dtb_data2 = dtb_data2
+        self.dtb_returned_games = dtb_returned_games
 
-    def dtb_duplicity_check(self):
-        web_game_id_list = [dtb_item["web_game_id"] for dtb_item in self.dtb_data]
-        for scraped_data_item in self.scraped_data:
-            if scraped_data_item.web_game_id not in web_game_id_list:
-                sql_queries.insert_data(self.my_con, self.my_cur, const.IH_GAMES, ["home_team_id", "away_team_id", "home_score", "away_score", "result_type", "league_id", "winner_team_id", "match_date", "season", "season_stage", "web_game_id"], [scraped_data_item.home_team_id, scraped_data_item.away_team_id, scraped_data_item.home_score, scraped_data_item.away_score, scraped_data_item.result_type, scraped_data_item.league_id, scraped_data_item.winner_team_id, scraped_data_item.match_date, scraped_data_item.season, scraped_data_item.season_stage, scraped_data_item.web_game_id])
-            else:
-                print(f"Hra: {scraped_data_item.web_game_id}, se již nachází v DTB!")
+    def get_dtb_game_id(self, scraped_game):
+        for dtb_game in self.dtb_returned_games:
+            if dtb_game["web_game_id"] == scraped_game.web_game_id:
+                return dtb_game["game_id"]
+
+
+    def dtb_duplicity_game_sheet_check(self, choosen_table, position):
+        dtb_players_id = [dtb_id["player_id"] for dtb_id in self.dtb_data]
+        dtb_games_id = [dtb_id["game_id"] for dtb_id in self.dtb_data]
+        for scraped_item in self.scraped_data:
+            scraped_game_id = self.get_dtb_game_id(scraped_item)
+            if position == "player":
+                for scraped_player_stats in scraped_item.players_stats_list:
+                    if scraped_player_stats.player_id not in dtb_players_id and scraped_game_id not in dtb_games_id:
+                        sql_queries.insert_data(self.my_con, self.my_cur, choosen_table,
+                        ["game_id", "player_id", "goals", "assists", "points", "plus_minus", "pim", "sog", "hits", "ppg", "toi", "face_off_percentage", "team_id", "blocked_shots", "season"],
+                        [scraped_game_id, scraped_player_stats.player_id, scraped_player_stats.goals, scraped_player_stats.assists, scraped_player_stats.points, scraped_player_stats.plus_minus, scraped_player_stats.pim, scraped_player_stats.sog, scraped_player_stats.hits, scraped_player_stats.ppg, scraped_player_stats.toi, scraped_player_stats.face_off_percentage, scraped_player_stats.team_id, scraped_player_stats.player_blocked_shots, scraped_player_stats.season])
+            elif position == "goalie":
+                for scraped_goalie_stats in scraped_item.goalies_stats_list:
+                    if scraped_goalie_stats.player_id not in dtb_players_id and scraped_game_id not in dtb_games_id:
+                        sql_queries.insert_data(self.my_con, self.my_cur, choosen_table,
+                        ["game_id", "player_id", "shots", "saves", "save_percentage", "toi", "team_id", "season", "has_played"],
+                        [scraped_game_id, scraped_goalie_stats.player_id, scraped_goalie_stats.shots, scraped_goalie_stats.saves, scraped_goalie_stats.save_percentage, scraped_goalie_stats.toi, scraped_goalie_stats.team_id, scraped_goalie_stats.season, scraped_goalie_stats.has_played])

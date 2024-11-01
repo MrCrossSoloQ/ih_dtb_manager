@@ -2,8 +2,11 @@ import requests
 from urllib.parse import urljoin
 import json
 from datetime import datetime, timedelta
+import goalie_game_sheet
 import ih_games
 import player_game_sheet
+from unidecode import unidecode
+from difflib import get_close_matches
 
 """Vygeneruje dnešní datum a po odečtu vrátí včerejší"""
 def get_date():
@@ -44,8 +47,7 @@ def game_stats(game_ids):
     return list_of_game_urls
 
 """Funkce, která vezme stažený obsah stránky, každého zápasu, který je jako dictionary a vytahá z něj potřebné údaje, které poukládá do proměnných"""
-def game_result_sheet(game_urls, dtb_returned_teams, highest_dtb_game_index, dtb_returned_players):
-    new_dtb_game_id = highest_dtb_game_index+1
+def game_result_sheet(game_urls, dtb_returned_teams, dtb_returned_players):
     game_list = []
 
     for game_url in game_urls:
@@ -78,17 +80,22 @@ def game_result_sheet(game_urls, dtb_returned_teams, highest_dtb_game_index, dtb
         home_team_defense_stats = downloaded_content["playerByGameStats"]["homeTeam"]["defense"]
         home_team_goalies_stats = downloaded_content["playerByGameStats"]["homeTeam"]["goalies"]
 
+        all_participated_players = away_team_forwards_stats + away_team_defense_stats + home_team_forwards_stats + home_team_defense_stats #
+        all_participated_goalies = away_team_goalies_stats + home_team_goalies_stats
+
+        print(away_team_defense_stats)
+
         dtb_home_team = dtb_team_searcher(home_team_name, dtb_returned_teams)
         dtb_away_team = dtb_team_searcher(away_team_name, dtb_returned_teams)
         season_stage = get_season_stage(game_type)
         winner_team = get_winner(dtb_home_team, home_team_score, dtb_away_team, away_team_score)
 
-        """Z daných údajů ze zápasu, vytvoří objekt podle třídy IhGames uloží ho do proměnné a přidá do listu"""
-        new_game = ih_games.IhGames(dtb_home_team["team_id"], dtb_away_team["team_id"], home_team_score, away_team_score, result_type, dtb_home_team["league_id"], winner_team["team_id"], match_date, season, season_stage, web_game_id)
-        game_list.append(new_game)
+        players_stats_list = player_stats_sheet(all_participated_players, dtb_returned_players, dtb_away_team, season)
+        goalies_stats_list = goalies_stats_sheet(all_participated_goalies, dtb_returned_players, dtb_away_team, season)
 
-        player_stats_sheet(away_team_forwards_stats, new_dtb_game_id)
-        player_stats_sheet(home_team_forwards_stats, new_dtb_game_id)
+        """Z daných údajů ze zápasu, vytvoří objekt podle třídy IhGames uloží ho do proměnné a přidá do listu"""
+        new_game = ih_games.IhGames(dtb_home_team["team_id"], dtb_away_team["team_id"], home_team_score, away_team_score, result_type, dtb_home_team["league_id"], winner_team["team_id"], match_date, season, season_stage, web_game_id, players_stats_list, goalies_stats_list)
+        game_list.append(new_game)
 
         print(season_stage)
         print(season)
@@ -98,8 +105,6 @@ def game_result_sheet(game_urls, dtb_returned_teams, highest_dtb_game_index, dtb
         print(home_team_name)
         print(home_team_score)
         print(result_type)
-
-        new_dtb_game_id +=1
 
     return game_list
 
@@ -142,7 +147,30 @@ def team_name_correction(team_name):
     print(corrected_team_name)
     return corrected_team_name
 
-def player_stats_sheet(list_of_players, new_dtb_game_id):
+def goalies_stats_sheet(list_of_goalies, dtb_returned_players, dtb_team, season):
+    goalies_stats_list = []
+    # print(json.dumps(list_of_goalies, indent=4))
+    for goalie in list_of_goalies:
+        goalie_name = goalie["name"]["default"]
+        goalie_toi = goalie["toi"]
+
+        goalie_toi_transfered = time_transfer(goalie_toi)
+        if goalie_toi == "00:00":
+            player_id = get_player_id(goalie_name, dtb_returned_players)
+            goalie_game_stats = goalie_game_sheet.GoalieGameSheet(player_id, goalie_toi_transfered,dtb_team["team_id"], season, 0, 0, 0.00, False)
+            goalies_stats_list.append(goalie_game_stats)
+        else:
+            goalie_shots = goalie["shotsAgainst"]
+            goalie_saves = goalie["saves"]
+            goalie_save_percentage = goalie["savePctg"]
+
+            player_id = get_player_id(goalie_name, dtb_returned_players)
+            goalie_game_stats = goalie_game_sheet.GoalieGameSheet(player_id, goalie_toi_transfered, dtb_team["team_id"], season, goalie_shots, goalie_saves, goalie_save_percentage, True)
+            goalies_stats_list.append(goalie_game_stats)
+    return goalies_stats_list
+
+def player_stats_sheet(list_of_players, dtb_returned_players, dtb_team, season):
+    players_stats_list = []
     for player in list_of_players:
         player_name = player["name"]["default"]
         player_goals = player["goals"]
@@ -156,13 +184,47 @@ def player_stats_sheet(list_of_players, new_dtb_game_id):
         player_toi = player["toi"]
         player_faceoff = player["faceoffWinningPctg"]
         player_blocked_shots = player["blockedShots"]
-        # player_stats = player_game_sheet.PlayerGameSheet(new_dtb_game_id,) #Nutno udělat fce na zbylé argumenty
-        print(player_name, player_goals, player_assists, player_points, player_plus_minus, player_pim, player_sog, player_hits, player_ppg, player_toi, player_faceoff, player_blocked_shots)
+
+        player_id = get_player_id(player_name, dtb_returned_players)
+        player_pim_adjusted = time_transfer(player_pim)
+        player_toi_adjusted = time_transfer(player_toi)
+
+        player_stats = player_game_sheet.PlayerGameSheet(player_id, player_goals, player_assists, player_points, player_plus_minus, player_pim_adjusted, player_sog, player_hits, player_ppg, player_toi_adjusted, player_faceoff, dtb_team["team_id"], player_blocked_shots, season)
+        players_stats_list.append(player_stats)
+
+        print(player_name, player_goals, player_assists, player_points, player_plus_minus, player_pim_adjusted, player_sog, player_hits, player_ppg, player_toi_adjusted, player_faceoff, player_blocked_shots)
+    return players_stats_list
+
+def time_transfer(time):
+    minutes = str(time)[:2]
+    seconds = str(time)[3:]
+    interval_format = f"{minutes}:{seconds:02}"
+    print(interval_format)
+    return interval_format
 
 def dtb_highest_game_id(dtb_returned_games):
     """Funkce, která získá nejvyšší id hry z DTB, následně přičtě jedna a tím vytvoří unikátní id, pro nejnovějsší zápas, který bude zapsán do DTB"""
     highest_dtb_game_index = dtb_returned_games[-1]["game_id"]
     return highest_dtb_game_index
+
+def get_player_id(current_game_player, dtb_returned_players):
+    for dtb_returned_player in dtb_returned_players:
+        dtb_player = dtb_returned_player["surname"][:1] + ". " + dtb_returned_player["last_name"]
+        dtb_player_diacriticsless = unidecode(dtb_player)
+        if current_game_player == dtb_player_diacriticsless:
+            return dtb_returned_player["player_id"]
+    else:
+        name_list = [dtb_returned_player["surname"][:1] + ". " + dtb_returned_player["last_name"] for dtb_returned_player in dtb_returned_players]
+        closest_match = get_close_matches(current_game_player, name_list, 1, 0.6)
+        print(f"Hledám hráče v DTB {current_game_player}")
+        print(f"Nejblížší shoda je: {closest_match}")
+        for dtb_returned_player in dtb_returned_players:
+            if dtb_returned_player["surname"][:1] + ". " + dtb_returned_player["last_name"] == closest_match[0]:
+                return dtb_returned_player["player_id"]
+        else:
+            print(f"Hráč: {current_game_player} stále nenalezen!")
+
+
 
 def downloader_manager(url_source, dtb_returned_teams, dtb_returned_games, dtb_returned_players):
     highest_dtb_game_index = dtb_highest_game_id(dtb_returned_games)
@@ -172,9 +234,10 @@ def downloader_manager(url_source, dtb_returned_teams, dtb_returned_games, dtb_r
     url_content = url_content_downloader(schedule_url)
     list_of_game_ids = todays_games(url_content, yesterday_date)
     list_of_game_urls = game_stats(list_of_game_ids)
-    list_of_match_objects = game_result_sheet(list_of_game_urls, dtb_returned_teams, highest_dtb_game_index, dtb_returned_players)
+    list_of_matchs_objects = game_result_sheet(list_of_game_urls, dtb_returned_teams, dtb_returned_players)
     print(list_of_game_urls)
-    return list_of_match_objects
+    print(list_of_matchs_objects)
+    return list_of_matchs_objects
 
 
 # game_result = url_content_downloader(list_of_game_urls[-3])
