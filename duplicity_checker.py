@@ -57,7 +57,6 @@ class GameDuplicityChecker(DuplicityChecker):
             if dtb_game["web_game_id"] == scraped_game.web_game_id:
                 return dtb_game["game_id"]
 
-
     def dtb_duplicity_game_sheet_check(self, choosen_table, position):
         dtb_players_id = [dtb_id["player_id"] for dtb_id in self.dtb_data]
         dtb_games_id = [dtb_id["game_id"] for dtb_id in self.dtb_data]

@@ -19,7 +19,6 @@ def get_schedule_url(yesterday_date_only, league_url_source):
     yesterday_game_sheet_url = urljoin(league_url_source, str(yesterday_date_only))
     return yesterday_game_sheet_url
 
-
 """Zašleme požadavek na server zadané URL, vrátí se nám objekt response s několika atributy"""
 def url_content_downloader(url):
     response = requests.get(url)
@@ -30,7 +29,6 @@ def url_content_downloader(url):
 def todays_games(data, date):
     game_ids = []
     for gameweek in data["gameWeek"]:
-        # print(gameweek)
         if gameweek["date"] == str(date):
             for game in gameweek["games"]:
                 game_ids.append(game["id"])
@@ -97,14 +95,14 @@ def game_result_sheet(game_urls, dtb_returned_teams, dtb_returned_players):
         new_game = ih_games.IhGames(dtb_home_team["team_id"], dtb_away_team["team_id"], home_team_score, away_team_score, result_type, dtb_home_team["league_id"], winner_team["team_id"], match_date, season, season_stage, web_game_id, players_stats_list, goalies_stats_list)
         game_list.append(new_game)
 
-        print(season_stage)
-        print(season)
-        print(match_date)
-        print(away_team_name)
-        print(away_team_score)
-        print(home_team_name)
-        print(home_team_score)
-        print(result_type)
+        # print(season_stage)
+        # print(season)
+        # print(match_date)
+        # print(away_team_name)
+        # print(away_team_score)
+        # print(home_team_name)
+        # print(home_team_score)
+        # print(result_type)
 
     return game_list
 
@@ -224,8 +222,6 @@ def get_player_id(current_game_player, dtb_returned_players):
         else:
             print(f"Hráč: {current_game_player} stále nenalezen!")
 
-
-
 def downloader_manager(url_source, dtb_returned_teams, dtb_returned_games, dtb_returned_players):
     highest_dtb_game_index = dtb_highest_game_id(dtb_returned_games)
     print(highest_dtb_game_index)
@@ -238,7 +234,6 @@ def downloader_manager(url_source, dtb_returned_teams, dtb_returned_games, dtb_r
     print(list_of_game_urls)
     print(list_of_matchs_objects)
     return list_of_matchs_objects
-
 
 # game_result = url_content_downloader(list_of_game_urls[-3])
 # print(json.dumps(game_result, indent=4))

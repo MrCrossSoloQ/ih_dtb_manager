@@ -5,7 +5,6 @@ import sql_queries
 import data_downloader
 import duplicity_checker
 import game_stats_downloader
-import const
 
 def league_choice(user_choice):
     while True:
