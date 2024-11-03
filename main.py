@@ -1,4 +1,5 @@
 import psycopg2.extras
+import psycopg2
 import os
 from dotenv import load_dotenv
 import sql_queries
@@ -6,7 +7,7 @@ import data_downloader
 import duplicity_checker
 import game_stats_downloader
 
-def league_choice(user_choice):
+def league_choice(user_choice, my_cur):
     while True:
         dtb_returned_leagues = sql_queries.get_data_simple(my_cur, choosen_table="leagues")
         id_list = ["R","0"]
@@ -51,7 +52,7 @@ def main_menu(my_con, my_cur):
                 print("Zadaná hodnota se nenachází v nabídce!")
 
             elif user_choice == 1:
-                inner_choice = league_choice(user_choice)
+                inner_choice = league_choice(user_choice, my_cur)
                 if inner_choice == "R":
                     continue
 
@@ -64,7 +65,7 @@ def main_menu(my_con, my_cur):
 
             elif user_choice == 2:
                 """Z důvodu testování, je data_downloander nastaven pouze na stahování hráčů z týmu s indexem 0 z NHL, aby mi to nestahovalo data 15min :) """
-                inner_choice = league_choice(user_choice)
+                inner_choice = league_choice(user_choice, my_cur)
                 if inner_choice == "R":
                     continue
 
@@ -76,7 +77,7 @@ def main_menu(my_con, my_cur):
                 players_duplicity_object.dtb_duplicity_check(table="players")
 
             elif user_choice ==3:
-                inner_choice = league_choice(user_choice) #Je jedno jestli zadáš 0,1,2 .. zatím
+                inner_choice = league_choice(user_choice, my_cur) #Je jedno jestli zadáš 0,1,2 .. zatím
                 if inner_choice == "R":
                     continue
 
@@ -96,9 +97,12 @@ def main_menu(my_con, my_cur):
                 dtb_returned_players_game_sheet = sql_queries.get_data_simple(my_cur, "player_game_sheet")
                 dtb_returned_goalies_game_sheet = sql_queries.get_data_simple(my_cur, "goalie_game_sheet")
 
-                g_duplicity_object = duplicity_checker.GameDuplicityChecker(dtb_returned_players_game_sheet, dtb_returned_goalies_game_sheet, dtb_returned_games, scraped_games, my_con, my_cur,)
-                g_duplicity_object.dtb_duplicity_game_sheet_check("player_game_sheet", "player")
-                g_duplicity_object.dtb_duplicity_game_sheet_check("goalie_game_sheet", "goalie")
+                g_duplicity_object = duplicity_checker.GameSheetDuplicityChecker(dtb_returned_players_game_sheet, dtb_returned_goalies_game_sheet, dtb_returned_games, scraped_games, my_con, my_cur,)
+                g_duplicity_object.dtb_duplicity_game_sheet_check("player_game_sheet")
+                g_duplicity_object.dtb_duplicity_game_sheet_check("goalie_game_sheet")
+
+                dtb_returned_game_results = sql_queries.get_full_game_info_on_optional_date(my_cur, "2024-11-02")
+                print(dtb_returned_game_results)
 
             elif user_choice == 0:
                 print("Neplecha ukončena!")
