@@ -92,7 +92,6 @@ def main_menu(my_con, my_cur):
                 g_duplicity_object = duplicity_checker.DuplicityChecker(dtb_returned_games, scraped_games, my_con, my_cur)
                 g_duplicity_object.dtb_game_duplicity_check()
 
-
                 dtb_returned_games = sql_queries.get_data_simple(my_cur, "ih_games")
                 dtb_returned_players_game_sheet = sql_queries.get_data_simple(my_cur, "player_game_sheet")
                 dtb_returned_goalies_game_sheet = sql_queries.get_data_simple(my_cur, "goalie_game_sheet")
@@ -111,14 +110,26 @@ def main_menu(my_con, my_cur):
         except ValueError:
             print("Zadat můžeš pouze číslo!")
 
-if __name__ == "__main__":
+def dtb_connection():
     load_dotenv("dev.env")
-
-    with psycopg2.connect(
+    con = psycopg2.connect(
         host = os.getenv("POSTGRES_LOCALHOST"),
         database = os.getenv("POSTGRES_DATABASE"),
         user = os.getenv("POSTGRES_USER"),
         password = os.getenv("POSTGRES_PASSWORD"),
+    )
+    return con
 
-    ) as my_con, my_con.cursor(cursor_factory = psycopg2.extras.DictCursor) as my_cur:
-        main_menu(my_con, my_cur)
+def dtb_cursor(con):
+    cur = con.cursor(cursor_factory=psycopg2.extras.DictCursor)
+    return cur
+
+def close_connection(con, cur):
+    cur.close()
+    con.close()
+
+if __name__ == "__main__":
+    my_con = dtb_connection()
+    my_cur = dtb_cursor(my_con)
+    main_menu(my_con, my_cur)
+    close_connection(my_con, my_cur)
