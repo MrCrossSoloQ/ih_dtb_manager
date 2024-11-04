@@ -1,11 +1,10 @@
 import sql_queries
 
 class DuplicityChecker:
-    def __init__(self, dtb_data, scraped_data, my_con = None, my_cur = None):
+    def __init__(self, dtb_data, scraped_data, my_dtb):
         self.dtb_data = dtb_data
         self.scraped_data = scraped_data
-        self.my_con = my_con
-        self.my_cur = my_cur
+        self.my_dtb = my_dtb
 
     """Metoda, která nám ověří, zda již je zápas s výsledkem uložený v dtb, podle unikátního čísla web_game_id"""
     def dtb_game_duplicity_check(self):
@@ -46,7 +45,7 @@ class DuplicityChecker:
                 print(f"V DTB se url adresa: {scraped_data_item.url} NACHÁZÍ")
 
     def dtb_insert_game_result(self, choosen_table, scraped_data_item):
-        sql_queries.insert_data(self.my_con, self.my_cur, choosen_table,["home_team_id", "away_team_id", "home_score", "away_score", "result_type", "league_id", "winner_team_id", "match_date", "season", "season_stage", "web_game_id"],
+        self.my_dtb.insert_data(choosen_table,["home_team_id", "away_team_id", "home_score", "away_score", "result_type", "league_id", "winner_team_id", "match_date", "season", "season_stage", "web_game_id"],
                                 [scraped_data_item.home_team_id, scraped_data_item.away_team_id, scraped_data_item.home_score, scraped_data_item.away_score, scraped_data_item.result_type, scraped_data_item.league_id, scraped_data_item.winner_team_id, scraped_data_item.match_date, scraped_data_item.season, scraped_data_item.season_stage, scraped_data_item.web_game_id])
 
 class GameSheetDuplicityChecker(DuplicityChecker):
