@@ -1,5 +1,3 @@
-import psycopg2.extras
-import psycopg2
 import os
 from dotenv import load_dotenv
 import data_downloader
@@ -84,13 +82,12 @@ def main_menu(my_dtb_driver):
                 dtb_returned_teams = my_dtb_driver.get_data_simple("teams")
                 dtb_returned_games = my_dtb_driver.get_data_simple("ih_games")
                 dtb_returned_players = my_dtb_driver.get_data_simple("players")
-                #
+
                 scraped_games = game_stats_downloader.downloader_manager(dtb_returned_leagues[1]["schedule_url_source"], dtb_returned_teams, dtb_returned_games, dtb_returned_players) #dtb_returned_leagues[1] prozatím nastaveno na první index
-                # print(scraped_games)
-                #
+
                 g_duplicity_object = duplicity_checker.DuplicityChecker(dtb_returned_games, scraped_games, my_dtb_driver)
                 g_duplicity_object.dtb_game_duplicity_check()
-                #
+
                 dtb_returned_games = my_dtb_driver.get_data_simple("ih_games")
                 dtb_returned_players_game_sheet = my_dtb_driver.get_data_simple("player_game_sheet")
                 dtb_returned_goalies_game_sheet = my_dtb_driver.get_data_simple("goalie_game_sheet")
@@ -109,24 +106,6 @@ def main_menu(my_dtb_driver):
         except ValueError:
             print("Zadat můžeš pouze číslo!")
 
-# def dtb_connection():
-#     load_dotenv("dev.env")
-#     con = psycopg2.connect(
-#         host = os.getenv("POSTGRES_LOCALHOST"),
-#         database = os.getenv("POSTGRES_DATABASE"),
-#         user = os.getenv("POSTGRES_USER"),
-#         password = os.getenv("POSTGRES_PASSWORD"),
-#     )
-#     return con
-#
-# def dtb_cursor(con):
-#     cur = con.cursor(cursor_factory=psycopg2.extras.DictCursor)
-#     return cur
-#
-# def close_connection(con, cur):
-#     cur.close()
-#     con.close()
-
 if __name__ == "__main__":
     load_dotenv("dev.env")
     my_dtb_driver = dtb_driver.DtbDriver(os.getenv("POSTGRES_LOCALHOST"), os.getenv("POSTGRES_DATABASE"), os.getenv("POSTGRES_USER"), os.getenv("POSTGRES_PASSWORD"))
@@ -136,8 +115,3 @@ if __name__ == "__main__":
     main_menu(my_dtb_driver)
 
     my_dtb_driver.dtb_disconnection()
-
-    # my_con = dtb_connection()
-    # my_cur = dtb_cursor(my_con)
-    # main_menu(my_con, my_cur)
-    # close_connection(my_con, my_cur)
