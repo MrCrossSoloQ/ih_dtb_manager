@@ -53,6 +53,7 @@ def main_menu(my_dtb_driver):
                 inner_choice = league_choice(user_choice, my_dtb_driver)
                 if inner_choice == "R":
                     continue
+
                 dtb_returned_leagues = my_dtb_driver.get_data_simple("leagues")
                 scraped_teams = data_downloader.teams_download(dtb_returned_leagues, inner_choice)
                 dtb_teams = my_dtb_driver.get_data_simple("teams")
