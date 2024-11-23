@@ -69,7 +69,7 @@ class WebScraper:
         player_date_of_birth = list_of_player_facts[0].text
         sliced_player_date_of_birth = player_date_of_birth[len("Date of Birth"):]
 
-        new_player = player.Player(player_surname, player_lastname, player_nation, league_id, player_position, player_date_of_birth, team_id, full_url)
+        new_player = player.Player(player_surname, player_lastname, player_nation, league_id, player_position, sliced_player_date_of_birth, team_id, full_url)
         print(player_surname, player_lastname, player_nation, league_id, sliced_player_position, sliced_player_date_of_birth, team_id, full_url)
         return new_player
 

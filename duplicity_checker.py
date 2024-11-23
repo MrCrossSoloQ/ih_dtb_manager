@@ -34,6 +34,7 @@ class DuplicityChecker:
                 self.my_dtb_driver.insert_data("teams", ["team_name", "league_id", "elite_url"],[scraped_data_item.team_name, scraped_data_item.league_id,scraped_data_item.url])
 
             elif scraped_data_item.url not in dtb_items and table == "players":
+                print(f"Do databáze přidána položka: {scraped_data_item.surname} {scraped_data_item.last_name} {scraped_data_item.nationality} {scraped_data_item.league_id} {scraped_data_item.player_position} {scraped_data_item.date_of_birth} {scraped_data_item.team_id} {scraped_data_item.url}")
                 self.my_dtb_driver.insert_data("players", ["surname", "last_name", "nationality", "league_id", "player_position", "date_of_birth", "team_id", "elite_url"],[scraped_data_item.surname, scraped_data_item.last_name, scraped_data_item.nationality, scraped_data_item.league_id, scraped_data_item.player_position, scraped_data_item.date_of_birth, scraped_data_item.team_id, scraped_data_item.url])
 
             elif scraped_data_item.url in dtb_items and table == "players":
