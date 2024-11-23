@@ -55,7 +55,10 @@ def main_menu(my_dtb_driver):
                     continue
 
                 dtb_returned_leagues = my_dtb_driver.get_data_simple("leagues")
-                scraped_teams = data_downloader.teams_download(dtb_returned_leagues, inner_choice)
+
+                dtb_league_data_object = data_downloader.WebScraper(dtb_returned_leagues)
+                scraped_teams = dtb_league_data_object.get_url("league", inner_choice)
+
                 dtb_teams = my_dtb_driver.get_data_simple("teams")
 
                 teams_duplicity_object = duplicity_checker.DuplicityChecker(dtb_teams, scraped_teams, my_dtb_driver)
@@ -68,7 +71,9 @@ def main_menu(my_dtb_driver):
                     continue
 
                 dtb_returned_teams = my_dtb_driver.get_data_simple("teams")
-                scraped_players = data_downloader.players_url_download(dtb_returned_teams, inner_choice)
+
+                dtb_teams_data_object = data_downloader.WebScraper(dtb_returned_teams)
+                scraped_players = dtb_teams_data_object.get_url("team_roster", inner_choice)
 
                 dtb_returned_players = my_dtb_driver.get_data_simple("players")
                 players_duplicity_object = duplicity_checker.DuplicityChecker(dtb_returned_players, scraped_players, my_dtb_driver)
