@@ -104,8 +104,8 @@ def main_menu(my_dtb_driver):
                 goalies_duplicity_object = duplicity_checker.GameSheetDuplicityChecker(dtb_returned_goalies_game_sheet, dtb_returned_games, scraped_games, my_dtb_driver)
                 goalies_duplicity_object.dtb_duplicity_game_sheet_check("goalie_game_sheet")
 
-                dtb_returned_game_results = my_dtb_driver.get_full_game_info_on_optional_date("2024-11-08")
-                print(dtb_returned_game_results)
+                # dtb_returned_game_results = my_dtb_driver.get_full_game_info_on_optional_date("2024-11-08")
+                # print(dtb_returned_game_results)
 
             elif user_choice == 0:
                 print("Neplecha ukončena!")
