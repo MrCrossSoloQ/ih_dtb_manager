@@ -119,3 +119,10 @@ class DtbDriver:
         self.cursor.execute(my_query)
         recieved_data = self.cursor.fetchall()
         return recieved_data
+
+    def get_player_game_stats(self):
+        my_query = sql.SQL(
+            """
+            
+            """
+        )

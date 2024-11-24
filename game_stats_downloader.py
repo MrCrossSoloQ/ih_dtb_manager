@@ -74,25 +74,29 @@ def game_result_sheet(game_urls, dtb_returned_teams, dtb_returned_players):
         away_team_forwards_stats = downloaded_content["playerByGameStats"]["awayTeam"]["forwards"]
         away_team_defense_stats = downloaded_content["playerByGameStats"]["awayTeam"]["defense"]
         away_team_goalies_stats = downloaded_content["playerByGameStats"]["awayTeam"]["goalies"]
+        away_team_all_skaters = away_team_forwards_stats + away_team_defense_stats
+
         home_team_forwards_stats = downloaded_content["playerByGameStats"]["homeTeam"]["forwards"]
         home_team_defense_stats = downloaded_content["playerByGameStats"]["homeTeam"]["defense"]
         home_team_goalies_stats = downloaded_content["playerByGameStats"]["homeTeam"]["goalies"]
-
-        all_participated_players = away_team_forwards_stats + away_team_defense_stats + home_team_forwards_stats + home_team_defense_stats #
-        all_participated_goalies = away_team_goalies_stats + home_team_goalies_stats
-
-        print(away_team_defense_stats)
+        home_team_all_skaters = home_team_forwards_stats + home_team_defense_stats
 
         dtb_home_team = dtb_team_searcher(home_team_name, dtb_returned_teams)
         dtb_away_team = dtb_team_searcher(away_team_name, dtb_returned_teams)
         season_stage = get_season_stage(game_type)
         winner_team = get_winner(dtb_home_team, home_team_score, dtb_away_team, away_team_score)
 
-        players_stats_list = player_stats_sheet(all_participated_players, dtb_returned_players, dtb_away_team, season)
-        goalies_stats_list = goalies_stats_sheet(all_participated_goalies, dtb_returned_players, dtb_away_team, season)
+        away_team_skaters_stats_list = player_stats_sheet(away_team_all_skaters, dtb_returned_players, dtb_away_team, season)
+        away_team_goalies_stats_list = goalies_stats_sheet(away_team_goalies_stats, dtb_returned_players, dtb_away_team, season)
+
+        home_team_skaters_stats_list = player_stats_sheet(home_team_all_skaters, dtb_returned_players, dtb_home_team, season)
+        home_team_goalies_stats_list = goalies_stats_sheet(home_team_goalies_stats, dtb_returned_players, dtb_home_team, season)
+
+        all_skaters_stats_list = away_team_skaters_stats_list + home_team_skaters_stats_list
+        all_goalies_stats_list = away_team_goalies_stats_list + home_team_goalies_stats_list
 
         """Z daných údajů ze zápasu, vytvoří objekt podle třídy IhGames uloží ho do proměnné a přidá do listu"""
-        new_game = ih_games.IhGames(dtb_home_team["team_id"], dtb_away_team["team_id"], home_team_score, away_team_score, result_type, dtb_home_team["league_id"], winner_team["team_id"], match_date, season, season_stage, web_game_id, players_stats_list, goalies_stats_list)
+        new_game = ih_games.IhGames(dtb_home_team["team_id"], dtb_away_team["team_id"], home_team_score, away_team_score, result_type, dtb_home_team["league_id"], winner_team["team_id"], match_date, season, season_stage, web_game_id, all_skaters_stats_list, all_goalies_stats_list)
         game_list.append(new_game)
 
         # print(season_stage)
@@ -170,6 +174,7 @@ def goalies_stats_sheet(list_of_goalies, dtb_returned_players, dtb_team, season)
 def player_stats_sheet(list_of_players, dtb_returned_players, dtb_team, season):
     players_stats_list = []
     for player in list_of_players:
+        print(player)
         player_name = player["name"]["default"]
         player_goals = player["goals"]
         player_assists = player["assists"]
