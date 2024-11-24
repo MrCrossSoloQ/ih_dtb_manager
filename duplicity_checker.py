@@ -48,9 +48,8 @@ class DuplicityChecker:
                                 [scraped_data_item.home_team_id, scraped_data_item.away_team_id, scraped_data_item.home_score, scraped_data_item.away_score, scraped_data_item.result_type, scraped_data_item.league_id, scraped_data_item.winner_team_id, scraped_data_item.match_date, scraped_data_item.season, scraped_data_item.season_stage, scraped_data_item.web_game_id])
 
 class GameSheetDuplicityChecker(DuplicityChecker):
-    def __init__(self, dtb_data, dtb_data2, dtb_returned_games, scraped_data, my_dtb_driver):
+    def __init__(self, dtb_data, dtb_returned_games, scraped_data, my_dtb_driver):
         super().__init__(dtb_data, scraped_data, my_dtb_driver)
-        self.dtb_data2 = dtb_data2
         self.dtb_returned_games = dtb_returned_games
 
     def get_dtb_game_id(self, scraped_game):
