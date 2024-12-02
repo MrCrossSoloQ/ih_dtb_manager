@@ -19,11 +19,10 @@ class DtbDriver:
                 user = self.user,
                 password = self.password
             )
-            return self.connection
 
     def cursor_maker(self):
         if self.connection and self.cursor is None:
-            self.cursor = self.connection.cursor(cursor_factory = psycopg2.extras.DictCursor)
+            self.cursor = self.connection.cursor(cursor_factory = psycopg2.extras.RealDictCursor)
             return self.cursor
 
     def dtb_disconnection(self):
@@ -120,9 +119,18 @@ class DtbDriver:
         recieved_data = self.cursor.fetchall()
         return recieved_data
 
-    def get_player_game_stats(self):
+    def get_player_game_stats(self, game_id):
         my_query = sql.SQL(
             """
-            
+            SELECT player_game_sheet.*, players.surname, players.last_name FROM player_game_sheet
+            JOIN players
+            ON player_game_sheet.player_id = players.player_id
+            WHERE game_id = {chosen_game_id}
             """
+        ).format(
+            chosen_game_id = sql.Literal(game_id)
         )
+
+        self.cursor.execute(my_query)
+        recieved_data = self.cursor.fetchall()
+        return recieved_data

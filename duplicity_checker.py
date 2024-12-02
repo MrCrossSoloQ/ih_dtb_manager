@@ -65,15 +65,19 @@ class GameSheetDuplicityChecker(DuplicityChecker):
 
             if position == "player_game_sheet":
                 for scraped_player_stats in scraped_item.players_stats_list:
-                    if scraped_player_stats.player_id not in dtb_players_id and scraped_dtb_game_id not in dtb_games_id:
+                    print(f"ID staženého hráče: {scraped_player_stats.player_id}, ID stažené HRY: {scraped_dtb_game_id}")
+                    if scraped_player_stats.player_id not in dtb_players_id or scraped_dtb_game_id not in dtb_games_id:
                         self.dtb_insert_player_stats(scraped_player_stats, "player_game_sheet", scraped_dtb_game_id)
+
                     else:
                         print(f"Staty hráče: {scraped_player_stats.player_id} ve hře {scraped_item.web_game_id} již v DTB existují!")
 
             elif position == "goalie_game_sheet":
                 for scraped_goalie_stats in scraped_item.goalies_stats_list:
-                    if scraped_goalie_stats.player_id not in dtb_players_id and scraped_dtb_game_id not in dtb_games_id:
+                    print(f"ID staženého hráče: {scraped_goalie_stats.player_id}, ID stažené HRY: {scraped_dtb_game_id}")
+                    if scraped_goalie_stats.player_id not in dtb_players_id or scraped_dtb_game_id not in dtb_games_id:
                         self.dtb_insert_goalie_stats(scraped_goalie_stats, "goalie_game_sheet", scraped_dtb_game_id)
+
                     else:
                         print(f"Staty hráče: {scraped_goalie_stats.player_id} ve hře {scraped_item.web_game_id} již v DTB existují!")
 
