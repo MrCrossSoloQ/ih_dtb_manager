@@ -116,7 +116,7 @@ def main_menu(my_dtb_driver):
 
 if __name__ == "__main__":
     load_dotenv("dev.env")
-    my_dtb_driver = dtb_driver.DtbDriver(os.getenv("POSTGRES_LOCALHOST"), os.getenv("POSTGRES_DATABASE"), os.getenv("POSTGRES_USER"), os.getenv("POSTGRES_PASSWORD"))
+    my_dtb_driver = dtb_driver.DtbDriver(os.getenv("POSTGRES_LOCALHOST", "host.docker.internal"), os.getenv("POSTGRES_DATABASE"), os.getenv("POSTGRES_USER"), os.getenv("POSTGRES_PASSWORD"))
     my_dtb_driver.connection_maker()
     my_dtb_driver.cursor_maker()
 

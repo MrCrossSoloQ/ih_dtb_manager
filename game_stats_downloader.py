@@ -54,8 +54,8 @@ def game_result_sheet(game_urls, dtb_returned_teams, dtb_returned_players):
         downloaded_content = url_content_downloader(game_url)
         # print(json.dumps(downloaded_content, indent=4))
 
-        home_team_name = downloaded_content["homeTeam"]["placeName"]["default"] + " " + downloaded_content["homeTeam"]["name"]["default"]
-        away_team_name = downloaded_content["awayTeam"]["placeName"]["default"] + " " + downloaded_content["awayTeam"]["name"]["default"]
+        home_team_name = downloaded_content["homeTeam"]["placeName"]["default"] + " " + downloaded_content["homeTeam"]["commonName"]["default"]
+        away_team_name = downloaded_content["awayTeam"]["placeName"]["default"] + " " + downloaded_content["awayTeam"]["commonName"]["default"]
         game_state = downloaded_content["gameState"]
 
         """Pokud zápas nebyl odehrán, iterace bude přeskočena"""
