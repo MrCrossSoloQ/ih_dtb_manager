@@ -3,6 +3,8 @@ import requests
 from bs4 import BeautifulSoup
 import teams
 import player
+import random
+import time
 
 class WebScraper:
     def __init__(self, dtb_data):
@@ -25,6 +27,7 @@ class WebScraper:
         response = requests.get(full_url)
         web = response.text
         soup = BeautifulSoup(web, "html.parser")
+        time.sleep(random.uniform(1.0, 3.0)) #zkouška proti ochraně před webscrapingem
         return soup
 
     def team_soup_parse(self, league_id, soup):
