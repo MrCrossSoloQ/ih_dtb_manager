@@ -12,7 +12,7 @@ def root():
     my_dtb.connection_maker()
     my_dtb.cursor_maker()
 
-    returned_games_stats = my_dtb.get_full_game_info_on_optional_date("2024-12-14")
+    returned_games_stats = my_dtb.get_full_game_info_on_optional_date("2024-12-23")
 
     list_of_players_stats = get_players_stats(returned_games_stats, my_dtb)
 

@@ -65,7 +65,6 @@ def main_menu(my_dtb_driver):
                 teams_duplicity_object.dtb_duplicity_check()
 
             elif user_choice == 2:
-                """Z důvodu testování, je data_downloander nastaven pouze na stahování hráčů z týmu s indexem 0 z NHL, aby mi to nestahovalo data 15min :) """
                 inner_choice = league_choice(user_choice, my_dtb_driver)
                 if inner_choice == "R":
                     continue

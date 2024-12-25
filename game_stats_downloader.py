@@ -229,7 +229,6 @@ def get_player_id(current_game_player, dtb_returned_players):
 
 def downloader_manager(url_source, dtb_returned_teams, dtb_returned_games, dtb_returned_players):
     highest_dtb_game_index = dtb_highest_game_id(dtb_returned_games)
-    print(highest_dtb_game_index)
     yesterday_date = get_date()
     schedule_url = get_schedule_url(yesterday_date, url_source)
     url_content = url_content_downloader(schedule_url)
