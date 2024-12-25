@@ -34,6 +34,7 @@ def todays_games(data, date):
                 game_ids.append(game["id"])
 
     print(game_ids)
+
     return game_ids
 
 """Funkce, která ze stažených id zápasů, vytvoří odkaz ke statistikám daného zápasu a vrátí je jako list"""
@@ -226,13 +227,17 @@ def get_player_id(current_game_player, dtb_returned_players):
                 return dtb_returned_player["player_id"]
         else:
             print(f"Hráč: {current_game_player} stále nenalezen!")
-
+def check_hockey_game(url_content, yesterday_date):
+    numofgame = url_content["gameWeek"]["numberOfGames"]
+    print(numofgame)
 def downloader_manager(url_source, dtb_returned_teams, dtb_returned_games, dtb_returned_players):
     highest_dtb_game_index = dtb_highest_game_id(dtb_returned_games)
     yesterday_date = get_date()
     schedule_url = get_schedule_url(yesterday_date, url_source)
     url_content = url_content_downloader(schedule_url)
     list_of_game_ids = todays_games(url_content, yesterday_date)
+    if not list_of_game_ids:
+        return False
     list_of_game_urls = game_stats(list_of_game_ids)
     list_of_matchs_objects = game_result_sheet(list_of_game_urls, dtb_returned_teams, dtb_returned_players)
     print(list_of_game_urls)

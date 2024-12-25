@@ -89,19 +89,21 @@ def main_menu(my_dtb_driver):
                 dtb_returned_players = my_dtb_driver.get_data_simple("players")
 
                 scraped_games = game_stats_downloader.downloader_manager(dtb_returned_leagues[1]["schedule_url_source"], dtb_returned_teams, dtb_returned_games, dtb_returned_players) #dtb_returned_leagues[1] prozatím nastaveno na první index
+                if scraped_games is False:
+                    print("Tento den se neodehrály žádné zápasy!")
+                else:
+                    g_duplicity_object = duplicity_checker.DuplicityChecker(dtb_returned_games, scraped_games, my_dtb_driver)
+                    g_duplicity_object.dtb_game_duplicity_check()
 
-                g_duplicity_object = duplicity_checker.DuplicityChecker(dtb_returned_games, scraped_games, my_dtb_driver)
-                g_duplicity_object.dtb_game_duplicity_check()
+                    dtb_returned_games = my_dtb_driver.get_data_simple("ih_games")
+                    dtb_returned_players_game_sheet = my_dtb_driver.get_data_simple("player_game_sheet")
+                    dtb_returned_goalies_game_sheet = my_dtb_driver.get_data_simple("goalie_game_sheet")
 
-                dtb_returned_games = my_dtb_driver.get_data_simple("ih_games")
-                dtb_returned_players_game_sheet = my_dtb_driver.get_data_simple("player_game_sheet")
-                dtb_returned_goalies_game_sheet = my_dtb_driver.get_data_simple("goalie_game_sheet")
+                    p_duplicity_object = duplicity_checker.GameSheetDuplicityChecker(dtb_returned_players_game_sheet, dtb_returned_games, scraped_games, my_dtb_driver)
+                    p_duplicity_object.dtb_duplicity_game_sheet_check("player_game_sheet")
 
-                p_duplicity_object = duplicity_checker.GameSheetDuplicityChecker(dtb_returned_players_game_sheet, dtb_returned_games, scraped_games, my_dtb_driver)
-                p_duplicity_object.dtb_duplicity_game_sheet_check("player_game_sheet")
-
-                goalies_duplicity_object = duplicity_checker.GameSheetDuplicityChecker(dtb_returned_goalies_game_sheet, dtb_returned_games, scraped_games, my_dtb_driver)
-                goalies_duplicity_object.dtb_duplicity_game_sheet_check("goalie_game_sheet")
+                    goalies_duplicity_object = duplicity_checker.GameSheetDuplicityChecker(dtb_returned_goalies_game_sheet, dtb_returned_games, scraped_games, my_dtb_driver)
+                    goalies_duplicity_object.dtb_duplicity_game_sheet_check("goalie_game_sheet")
 
                 # dtb_returned_game_results = my_dtb_driver.get_full_game_info_on_optional_date("2024-11-08")
                 # print(dtb_returned_game_results)
