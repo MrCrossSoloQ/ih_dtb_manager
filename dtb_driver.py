@@ -134,3 +134,40 @@ class DtbDriver:
         self.cursor.execute(my_query)
         recieved_data = self.cursor.fetchall()
         return recieved_data
+
+    def get_data_on_simple_condition(self, table, column, column_value):
+        my_query = sql.SQL(
+            """
+            SELECT * FROM {}
+            WHERE {} = {}
+            """
+        ).format(
+            sql.Identifier(table),
+            sql.Identifier(column),
+            sql.Literal(column_value),
+        )
+
+        self.cursor.execute(my_query)
+        received_data = self.cursor.fetchall()
+
+        return received_data
+
+    def get_num_of_all_team_games_in_season(self, table, league_id_value, season_value, home_team_id_value, away_team_id_value):
+        """Vrátí počet odehraných zápasů v sezoně"""
+        my_query = sql.SQL(
+            """
+            SELECT COUNT (*) 
+            FROM {}
+            WHERE league_id = {} AND season = {} AND home_team_id = {} OR away_team_id = {}
+            """
+        ).format(
+            sql.Identifier(table),
+            sql.Literal(league_id_value),
+            sql.Literal(season_value),
+            sql.Literal(home_team_id_value),
+            sql.Literal(away_team_id_value)
+        )
+
+        self.cursor.execute(my_query)
+        received_data = self.cursor.fetchall()
+        return received_data
