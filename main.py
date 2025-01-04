@@ -2,7 +2,7 @@ import os
 from dotenv import load_dotenv
 import data_downloader
 import duplicity_checker
-import game_stats_downloader
+import nhl_game_stats_downloader
 import dtb_driver
 from data_downloader import PlaywrightController
 import ahl_game_stats_downloader
@@ -96,7 +96,7 @@ def main_menu(my_dtb_driver):
                     dtb_returned_games = my_dtb_driver.get_data_on_simple_condition("ih_games", "league_id", 1)
                     dtb_returned_players = my_dtb_driver.get_data_simple("players")
 
-                    nhl = game_stats_downloader.NhlGameDownloader(dtb_returned_leagues[0]["schedule_url_source"], dtb_returned_teams, dtb_returned_games, dtb_returned_players)
+                    nhl = nhl_game_stats_downloader.NhlGameDownloader(dtb_returned_leagues[0]["schedule_url_source"], dtb_returned_teams, dtb_returned_games, dtb_returned_players)
                     scraped_games = nhl.downloader_manager()
                     print(scraped_games)
 
