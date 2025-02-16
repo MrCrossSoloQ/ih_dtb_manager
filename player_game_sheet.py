@@ -14,4 +14,3 @@ class PlayerGameSheet:
         self.team_id = team_id
         self.player_blocked_shots = player_blocked_shots
         self.season = season
-

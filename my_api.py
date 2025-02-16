@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 
 app = FastAPI()
 
-@app.get("/")
+@app.get("/game_results")
 def root():
     load_dotenv("dev.env")
     my_dtb = dtb_driver.DtbDriver(os.getenv("POSTGRES_LOCALHOST"), os.getenv("POSTGRES_DATABASE"), os.getenv("POSTGRES_USER"), os.getenv("POSTGRES_PASSWORD"))

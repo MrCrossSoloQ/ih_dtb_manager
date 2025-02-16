@@ -1,4 +1,4 @@
-from urllib.parse import urljoin
+from urllib.parse import urljoin, unquote
 from bs4 import BeautifulSoup
 from playwright.sync_api import sync_playwright
 import teams
@@ -7,7 +7,7 @@ import random
 import time
 
 class PlaywrightController:
-    def __init__(self, dtb_data):
+    def __init__(self, dtb_data = None):
         self.dtb_data = dtb_data
         self.playwright = None
         self.browser = None
@@ -23,7 +23,8 @@ class PlaywrightController:
             self.page = self.browser.new_page()
 
     def get_page_content(self, full_url):
-        time.sleep(random.uniform(1.0, 3.0))
+        print(f"get_page_url - Testovací výpis: {full_url}")
+        time.sleep(random.uniform(1.0, 5.0)) #kratší generovaná pauza, aby nás nezachytla ochrana proti webscrapingu
         self.page.goto(full_url)
         html = self.page.content()
         return html
@@ -55,7 +56,8 @@ class PlaywrightController:
         for team in list_of_scraped_teams:
             team_name = team.text
             team_url = team.get("href")
-            new_team = teams.Teams(league_id, team_name, team_url)
+            team_full_url = "https://www.eliteprospects.com" + team_url
+            new_team = teams.Teams(league_id, team_name, team_full_url)
             print(league_id, team_name, team_url)
             self.scraped_items.append(new_team)
 
@@ -79,8 +81,6 @@ class PlaywrightController:
         html_content = self.get_page_content(full_url)
         returned_soup = self.soup_maker(html_content)
         player_h1 = returned_soup.find("h1", class_ = "Profile_headerMain__WPgYE")
-        print(player_h1)
-        player_nation = player_h1.find("img").get("title")
         player_fullname = player_h1.text
         adjusted_player_name = self.player_name_splitter(player_fullname)
         player_surname = adjusted_player_name[0]
@@ -88,13 +88,16 @@ class PlaywrightController:
 
         player_card_ul = returned_soup.find("ul", class_ = "PlayerFacts_factsList__Xw_ID")
         list_of_player_facts = player_card_ul.find_all("li")
+        player_nation = list_of_player_facts[3].find("a", class_="TextLink_link__RhSiC").text
         player_position = list_of_player_facts[5].text
         sliced_player_position = player_position[len("Position"):]
         player_date_of_birth = list_of_player_facts[0].text
         sliced_player_date_of_birth = player_date_of_birth[len("Date of Birth"):]
 
-        new_player = player.Player(player_surname, player_lastname, player_nation, league_id, player_position, sliced_player_date_of_birth, team_id, full_url)
-        print(player_surname, player_lastname, player_nation, league_id, sliced_player_position, sliced_player_date_of_birth, team_id, full_url)
+        decoded_url = unquote(full_url)
+
+        new_player = player.Player(player_surname, player_lastname, player_nation, league_id, sliced_player_position, sliced_player_date_of_birth, team_id, decoded_url)
+        print(player_surname, player_lastname, player_nation, league_id, sliced_player_position, sliced_player_date_of_birth, team_id, decoded_url)
         return new_player
 
 

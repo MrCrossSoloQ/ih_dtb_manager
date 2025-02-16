@@ -49,7 +49,7 @@ def main_menu(my_dtb_driver):
             print("[0] - Konec")
             user_choice = int(input("Vyber následující hodnotu z nabídky: "))
 
-            if user_choice < 0 or user_choice > 3:
+            if user_choice < 0 or user_choice > 4:
                 print("Zadaná hodnota se nenachází v nabídce!")
 
             elif user_choice == 1:
@@ -86,17 +86,18 @@ def main_menu(my_dtb_driver):
                 players_duplicity_object.dtb_duplicity_check("players")
 
             elif user_choice ==3:
-                inner_choice = league_choice(user_choice, my_dtb_driver) #volba 2 a 3 zatím nedodělána
+                inner_choice = league_choice(user_choice, my_dtb_driver) #volba č. 2,3 zatím nedodělána
                 if inner_choice == "R":
                     continue
 
                 elif inner_choice == 1:
                     dtb_returned_leagues = my_dtb_driver.get_data_simple("leagues")
+                    nhl_league_schedule_url = dtb_returned_leagues[0]["schedule_url_source"]
                     dtb_returned_teams = my_dtb_driver.get_data_on_simple_condition("teams", "league_id", 1)
                     dtb_returned_games = my_dtb_driver.get_data_on_simple_condition("ih_games", "league_id", 1)
-                    dtb_returned_players = my_dtb_driver.get_data_simple("players")
 
-                    nhl = nhl_game_stats_downloader.NhlGameDownloader(dtb_returned_leagues[0]["schedule_url_source"], dtb_returned_teams, dtb_returned_games, dtb_returned_players)
+                    downloader_controller = data_downloader.PlaywrightController()
+                    nhl = nhl_game_stats_downloader.NhlGameDownloader(nhl_league_schedule_url, dtb_returned_teams, dtb_returned_games, my_dtb_driver, downloader_controller)
                     scraped_games = nhl.downloader_manager()
                     print(scraped_games)
 
@@ -120,14 +121,15 @@ def main_menu(my_dtb_driver):
                 elif inner_choice == 2:
 
                     dtb_returned_leagues = my_dtb_driver.get_data_simple("leagues")
+                    last_game_url = dtb_returned_leagues[1]["schedule_url_source"]
                     dtb_returned_teams = my_dtb_driver.get_data_on_simple_condition("teams", "league_id", 2)
                     dtb_returned_games = my_dtb_driver.get_data_on_simple_condition("ih_games", "league_id", 2)
-                    dtb_returned_players = my_dtb_driver.get_data_simple("players")
 
-                    ahl = ahl_game_stats_downloader.AhlGameDownloader(dtb_returned_leagues[1]["schedule_url_source"], dtb_returned_teams, dtb_returned_games, dtb_returned_players, my_dtb_driver)
-                    ahl.playwright_starter()
+                    downloader_controller = data_downloader.PlaywrightController()
+                    ahl = ahl_game_stats_downloader.AhlGameDownloader(last_game_url, dtb_returned_teams, dtb_returned_games, my_dtb_driver, downloader_controller)
+
                     scraped_ahl_games = ahl.ahl_game_manager()
-                    ahl.playwright_termination()
+                    print(f"Stažené AHL hry: {scraped_ahl_games}")
 
                     if scraped_ahl_games is False:
                         print("Tento den se neodehrály žádné zápasy!")
@@ -135,8 +137,25 @@ def main_menu(my_dtb_driver):
                     else:
 
                         ahl_duplicity = duplicity_checker.DuplicityChecker(dtb_returned_games, scraped_ahl_games, my_dtb_driver)
-                        ahl_duplicity.dtb_game_duplicity_check()
+                        # ahl_duplicity.dtb_game_duplicity_check()
 
+                        # dtb_returned_games = my_dtb_driver.get_data_simple("ih_games")
+                        # dtb_returned_players_game_sheet = my_dtb_driver.get_data_simple("player_game_sheet")
+                        # dtb_returned_goalies_game_sheet = my_dtb_driver.get_data_simple("goalie_game_sheet")
+                        #
+                        # p_duplicity = duplicity_checker.GameSheetDuplicityChecker(dtb_returned_players_game_sheet, dtb_returned_games, scraped_ahl_games, my_dtb_driver)
+                        # p_duplicity.dtb_duplicity_game_sheet_check("player_game_sheet")
+                        #
+                        # goalies_duplicity_object = duplicity_checker.GameSheetDuplicityChecker(dtb_returned_goalies_game_sheet, dtb_returned_games, scraped_ahl_games, my_dtb_driver)
+                        # goalies_duplicity_object.dtb_duplicity_game_sheet_check("goalie_game_sheet")
+
+            elif user_choice == 4:
+                """Volba č. 4 pouze pro testování"""
+                dtb_returned_player = my_dtb_driver.get_data_on_simple_condition("players", "elite_url", "https://www.eliteprospects.com/player/237071/martin-necas")
+                if not dtb_returned_player:
+                    print("NIC SE NEVRÁTILO")
+                print(dtb_returned_player)
+                print(dtb_returned_player[0]["last_name"])
 
             elif user_choice == 0:
                 print("Neplecha ukončena!")
@@ -147,10 +166,8 @@ def main_menu(my_dtb_driver):
 
 if __name__ == "__main__":
     load_dotenv("dev.env")
-    my_dtb_driver = dtb_driver.DtbDriver(os.getenv("POSTGRES_LOCALHOST", "host.docker.internal"), os.getenv("POSTGRES_DATABASE"), os.getenv("POSTGRES_USER"), os.getenv("POSTGRES_PASSWORD"))
-    my_dtb_driver.connection_maker()
-    my_dtb_driver.cursor_maker()
+    my_dtb_controller = dtb_driver.DtbDriver(os.getenv("POSTGRES_LOCALHOST", "host.docker.internal"), os.getenv("POSTGRES_DATABASE"), os.getenv("POSTGRES_USER"), os.getenv("POSTGRES_PASSWORD"))
 
-    main_menu(my_dtb_driver)
+    main_menu(my_dtb_controller)
 
-    my_dtb_driver.dtb_disconnection()
+    my_dtb_controller.dtb_disconnection()

@@ -1,5 +1,5 @@
 class Player:
-    def __init__(self, surname, last_name, nationality, league_id, player_position, date_of_birth, team_id, url):
+    def __init__(self, surname = None, last_name = None, nationality = None, league_id = None, player_position = None, date_of_birth = None, team_id = None, url = None, jersey_number = None, player_shorted_name = None):
         self.surname = surname
         self.last_name = last_name
         self.nationality = nationality
@@ -8,3 +8,5 @@ class Player:
         self.date_of_birth = date_of_birth
         self.team_id = team_id
         self.url = url
+        self.jersey_number = jersey_number
+        self.player_shorted_name = player_shorted_name

@@ -26,10 +26,17 @@ class DtbDriver:
             return self.cursor
 
     def dtb_disconnection(self):
-        self.cursor.close()
         self.connection.close()
+        self.connection = None
+
+    def close_cursor(self):
+        self.cursor.close()
+        self.cursor = None
 
     def get_data_simple(self, choosen_table):
+        self.connection_maker()
+        self.cursor_maker()
+
         my_query = sql.SQL(
             """
                 SELECT * FROM {table}
@@ -40,9 +47,14 @@ class DtbDriver:
 
         self.cursor.execute(my_query)
         recieved_data = self.cursor.fetchall()
+
+        self.close_cursor()
         return recieved_data
 
     def insert_data(self, choosen_table, columns, values):
+        self.connection_maker()
+        self.cursor_maker()
+
         my_query = sql.SQL(
             """
             INSERT INTO {table}({columns})
@@ -57,7 +69,12 @@ class DtbDriver:
         self.cursor.execute(my_query)
         self.connection.commit()
 
+        self.close_cursor()
+
     def get_data_join_condition_results(self, table_a, table_b, column_t_a, column_t_b, column_t_b2, condition_column, value):
+        self.connection_maker()
+        self.cursor_maker()
+
         my_query = sql.SQL(
             """
                 SELECT {}.*, {}.{} FROM {}
@@ -81,9 +98,14 @@ class DtbDriver:
         )
         self.cursor.execute(my_query)
         recieved_data = self.cursor.fetchall()
+
+        self.close_cursor()
         return recieved_data
 
     def update_data(self, table_a, column_a, new_value, column_b, id_value):
+        self.connection_maker()
+        self.cursor_maker()
+
         my_query = sql.SQL(
             """
                 UPDATE {}
@@ -101,7 +123,12 @@ class DtbDriver:
         self.cursor.execute(my_query)
         self.connection.commit()
 
+        self.close_cursor()
+
     def get_full_game_info_on_optional_date(self, choosen_date):
+        self.connection_maker()
+        self.cursor_maker()
+
         my_query = sql.SQL(
             """
                 SELECT ih_games.*, home_teams.team_name AS home_team_name, away_teams.team_name AS away_team_name FROM ih_games
@@ -117,9 +144,14 @@ class DtbDriver:
 
         self.cursor.execute(my_query)
         recieved_data = self.cursor.fetchall()
+
+        self.close_cursor()
         return recieved_data
 
     def get_player_game_stats(self, game_id):
+        self.connection_maker()
+        self.cursor_maker()
+
         my_query = sql.SQL(
             """
             SELECT player_game_sheet.*, players.surname, players.last_name FROM player_game_sheet
@@ -133,9 +165,14 @@ class DtbDriver:
 
         self.cursor.execute(my_query)
         recieved_data = self.cursor.fetchall()
+
+        self.close_cursor()
         return recieved_data
 
     def get_data_on_simple_condition(self, table, column, column_value):
+        self.connection_maker()
+        self.cursor_maker()
+
         my_query = sql.SQL(
             """
             SELECT * FROM {}
@@ -150,10 +187,14 @@ class DtbDriver:
         self.cursor.execute(my_query)
         received_data = self.cursor.fetchall()
 
+        self.close_cursor()
         return received_data
 
     def get_num_of_all_team_games_in_season(self, table, league_id_value, season_value, home_team_id_value, away_team_id_value):
         """Vrátí počet odehraných zápasů v sezoně"""
+        self.connection_maker()
+        self.cursor_maker()
+
         my_query = sql.SQL(
             """
             SELECT COUNT (*) 
@@ -170,4 +211,6 @@ class DtbDriver:
 
         self.cursor.execute(my_query)
         received_data = self.cursor.fetchall()
+
+        self.close_cursor()
         return received_data
