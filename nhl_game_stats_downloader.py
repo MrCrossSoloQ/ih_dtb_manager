@@ -7,6 +7,8 @@ from difflib import get_close_matches
 import goalie_game_sheet
 import player_game_sheet
 import player
+import os
+from dotenv import load_dotenv
 # import json
 
 class NhlGameDownloader:
@@ -185,7 +187,7 @@ class NhlGameDownloader:
                 goalie_save_percentage = goalie["savePctg"]
 
                 player_id = self.get_player_id(goalie_name, dtb_team, jersey_num)
-                goalie_game_stats = goalie_game_sheet.GoalieGameSheet(player_id, goalie_toi_transfered, dtb_team["team_id"], season, goalie_shots, goalie_saves, goalie_save_percentage, True, jersey_num)
+                goalie_game_stats = goalie_game_sheet.GoalieGameSheet(player_id, goalie_toi_transfered, dtb_team["team_id"], season, goalie_shots, goalie_saves, goalie_save_percentage, True)
                 goalies_stats_list.append(goalie_game_stats)
         return goalies_stats_list
 
@@ -235,11 +237,13 @@ class NhlGameDownloader:
         return interval_format
 
     def get_player_id_second_stage(self, dtb_team_roster, game_searched_player_name):
+        print(game_searched_player_name)
         name_list = []
 
         for dtb_returned_player in dtb_team_roster:
             """Cyklus, který hledá přímou shodu jmen hráčů"""
             dtb_player_name = dtb_returned_player["surname"][:1] + ". " + dtb_returned_player["last_name"]
+            # print(f"Variace jmen hráče: {dtb_returned_player['name_variants']}")
             if dtb_player_name == game_searched_player_name or game_searched_player_name in dtb_returned_player["name_variants"]:
                 return dtb_returned_player["player_id"]
             else:
@@ -266,24 +270,42 @@ class NhlGameDownloader:
         if player_id_result is not None:
             return player_id_result
         else:
-            dtb_affiliated_team_roster = self.my_dtb_driver.get_data_on_simple_condition("players", "team_id", dtb_team["affiliated_team_id_one"])
+            dtb_affiliated_team_roster = self.my_dtb_driver.get_data_on_simple_condition("players", "team_id", dtb_team["affiliated_team_id_one"]) ##Vrátí všechny hráče z DTB na základě id přidruženého týmu
             player_id_result = self.get_player_id_second_stage(dtb_affiliated_team_roster, game_searched_player_name)
             if player_id_result is not None:
                 return player_id_result
 
             else:
-                dtb_returned_players = self.my_dtb_driver.get_data_simple("players")
+                dtb_returned_players = self.my_dtb_driver.get_data_simple("players") #Vrátí seznam všech hráčů v DTB a hledá v nich
+                # print(f"Vrácený seznam všech hráčů z DTB: {dtb_returned_players}")
                 player_id_result = self.get_player_id_second_stage(dtb_returned_players, game_searched_player_name)
                 if player_id_result is not None:
                     return player_id_result
+
                 else:
-                    print(f"Hráč: {game_searched_player_name} stále nenalezen!")
+                    print(f"Hledaný hráč: {game_searched_player_name} se v DTB nenachází!") #Stažení aktuální sestavy týmu, ve kterém hrál
+                    print("Hledám hráče v aktuálním rosteru týmu!")
                     team_full_url = dtb_team["elite_url"] + "/depth-chart"
-                    print(team_full_url)
+                    print(f"Stahuji roster aktuálního týmu: {team_full_url}")
                     self.downloader_controller.playwright_starter()
-                    page_content = self.downloader_controller.get_page_content(team_full_url)
-                    soup = self.downloader_controller.soup_maker(page_content)
-                    self.roster_players_extractor(soup, game_searched_player_name, dtb_team, jersey_num)
+                    page_result = self.downloader_controller.load_page(team_full_url)
+                    if page_result is True:
+                        page_content = self.downloader_controller.get_page_content()
+                        soup = self.downloader_controller.soup_maker(page_content)
+                        player_id_result = self.roster_players_extractor(soup, game_searched_player_name, dtb_team, jersey_num)
+                        if player_id_result is not None:
+                            return player_id_result
+
+                        else:
+                            self.downloader_controller.playwright_starter()
+                            list_of_scraped_players = self.downloader_controller.elite_prospects_get_player(game_searched_player_name, dtb_team)
+                            print(f"List nalezených hráčů v DTB na elite prospects: {list_of_scraped_players}")
+                            if len(list_of_scraped_players) == 1:
+                                scraped_data_item = list_of_scraped_players[0]
+                                player_id_result = self.my_dtb_driver.insert_data_and_return_id("players", ["surname", "last_name", "nationality", "league_id", "player_position", "date_of_birth", "team_id", "elite_url", "name_variants"],[scraped_data_item.surname, scraped_data_item.last_name, scraped_data_item.nationality, scraped_data_item.league_id, scraped_data_item.player_position, scraped_data_item.date_of_birth, scraped_data_item.team_id, scraped_data_item.url, scraped_data_item.name_variants], "player_id")
+                                print(f"ID nově přidaného hráře po přidání do DTB: {player_id_result}")
+                                if player_id_result is not None:
+                                    return player_id_result
 
     # def get_dtb_team_url(self, dtb_team_id, current_game_player):
     #     """Metoda, která najde tým z dtb, ke kterému hledáme hráče a získá url k jeho sestavě hráčů. """
@@ -300,12 +322,9 @@ class NhlGameDownloader:
         decoded_player_url = unquote(scraped_player_full_url)
 
         scraped_player_name = tag_a.text
-        adjusted_player_name = self.player_name_splitter(scraped_player_name)
-        first_name = adjusted_player_name[0]
-        last_name = adjusted_player_name[1]
-        shorted_player_name = first_name[:1] + ". " + last_name
+        player_first_name, player_last_name, shorted_name = self.player_name_splitter(scraped_player_name)
 
-        scraped_player = player.Player(surname=first_name, last_name=last_name, team_id=dtb_team["team_id"], url=decoded_player_url, player_shorted_name=shorted_player_name)
+        scraped_player = player.Player(surname=player_first_name, last_name=player_last_name, team_id=dtb_team["team_id"], url=decoded_player_url, player_shorted_name=shorted_name)
         return scraped_player
 
     def roster_players_extractor(self, soup, searched_player, dtb_team, game_jersey_num):
@@ -332,30 +351,33 @@ class NhlGameDownloader:
                     list_of_scraped_roster.append(scraped_player)
                     print(scraped_player.surname, scraped_player.last_name, scraped_player.url, scraped_player.player_shorted_name)
 
-        self.player_data_dtb_adjustment(list_of_scraped_roster, searched_player, dtb_team, game_jersey_num)
+        player_id = self.player_data_dtb_adjustment(list_of_scraped_roster, searched_player, dtb_team, game_jersey_num)
+        print(f"Vrácené ID hráče po stažení aktuální sestavy týmu: {player_id}")
+        return player_id
 
     def player_data_dtb_adjustment(self, list_of_scraped_roster, searched_player, dtb_team, jersey_num):
-        """ Pokud u hledaného hráče došlo ke změně týmu dojde k aktualizaci v DTB.
-            Jestliže hráč v DTB vůbec není, dojde ke stažení jeho dat a přidání do DTB."""
+        """Jestliže hráč v DTB vůbec není, dojde ke stažení jeho dat a přidání do DTB a vrácení jeho ID v DTB.
+            Pokud u hledaného hráče došlo ke změně týmu dojde k aktualizaci v DTB.
+        """
         reduced_scraped_roster = self.scraped_roster_reduction_by_letter(list_of_scraped_roster, searched_player)
         searched_player = self.get_close_match(searched_player, reduced_scraped_roster, jersey_num)
         print(f"player_data_dtb_adjustment/shody: {searched_player}")
         for player in reduced_scraped_roster:
             if player.player_shorted_name == searched_player:
                 dtb_returned_player = self.my_dtb_driver.get_data_on_simple_condition("players", "elite_url", player.url)
-                print(f"Test, během iterace: {dtb_returned_player}")
+                print(f"Stažený hráč ze sestavy se nachází v DTB: {dtb_returned_player}")
                 if dtb_returned_player:
                     player_id = dtb_returned_player[0]["player_id"]
-                    print(f"Test IDčka: {player_id}")
+                    print(f"Vrácené ID hráče z DTB u kterého proběhne update teamu: {player_id}")
                     self.my_dtb_driver.update_data("players", "team_id", dtb_team["team_id"], "player_id", player_id)
+                    return player_id
 
                 elif not dtb_returned_player:
                     self.downloader_controller.playwright_starter()
                     new_player = self.downloader_controller.player_profile_parse(player.url, dtb_team["league_id"], dtb_team["team_id"])
-                    self.my_dtb_driver.insert_data("players", ["surname", "last_name", "nationality", "league_id", "player_position", "date_of_birth", "team_id", "elite_url"], [new_player.surname, new_player.last_name, new_player.nationality, new_player.league_id, new_player.player_position, new_player.date_of_birth, new_player.team_id, new_player.url])
-                    self.downloader_controller.playwright_termination()
-
-        self.get_player_id(searched_player, dtb_team, jersey_num)
+                    player_id = self.my_dtb_driver.insert_data_and_return_id("players", ["surname", "last_name", "nationality", "league_id", "player_position", "date_of_birth", "team_id", "elite_url", "name_variants"],[new_player.surname, new_player.last_name, new_player.nationality, new_player.league_id, new_player.player_position, new_player.date_of_birth, new_player.team_id, new_player.url, new_player.name_variants], "player_id")
+                    print(f"ID nově přidaného hráče z aktuální sestavy týmu: {player_id}")
+                    return player_id
 
     def scraped_roster_reduction_by_letter(self, list_of_scraped_roster, searched_player):
         """Zredukuje nám staženou sestavu, ve které hledáme hráče, na základě počátečního písmena, hledaného hráče"""
@@ -365,15 +387,17 @@ class NhlGameDownloader:
             first_name_letter = player.player_shorted_name[:1]
             if first_name_letter == searched_player_innitiall_letter:
                 self.downloader_controller.playwright_starter()
-                page_content = self.downloader_controller.get_page_content(player.url)
-                soup = self.downloader_controller.soup_maker(page_content)
-                h2 = soup.find("h2", class_="Profile_subTitlePlayer__drUwD")
-                word_list = h2.text.strip().split()
-                jersey_num = word_list[0][1:]
-                player.jersey_number = jersey_num
-                reduced_roster.append(player)
+                page_result = self.downloader_controller.load_page(player.url)
+                if page_result is True:
+                    page_content = self.downloader_controller.get_page_content()
+                    soup = self.downloader_controller.soup_maker(page_content)
+                    h2 = soup.find("h2", class_="Profile_subTitlePlayer__drUwD")
+                    word_list = h2.text.strip().split()
+                    jersey_num = word_list[0][1:]
+                    player.jersey_number = jersey_num
+                    reduced_roster.append(player)
 
-        print("Redukovaný list")
+        print("Stažená aktuální sestava týmu a redukována, na základě počátečního písmena hledaného hráče.")
         for player in reduced_roster:
             print(player.surname, player.last_name, player.url)
         return reduced_roster
@@ -393,14 +417,15 @@ class NhlGameDownloader:
             returned_player = self.jersey_num_comparator(current_game_player, jersey_num, reduced_scraped_roster)
             return returned_player
         elif not list_of_close_matches:
-            print("Nebyla nalezena žádná shoda hráče v DTB ani na eliteprospects.com")
+            print("Nebyla nalezena shoda hledaného hráče v aktuální stažené sestavě týmu na eliteprospects.com")
 
     def player_name_splitter(self, player_fullname):
         """Rozdělí nám jméno staženého hráče na křestní jméno a příjmené"""
         word_list = player_fullname.split()
         player_first_name = word_list[0]
         player_last_name = " ".join(word_list[1:][:-1]) or None
-        return player_first_name, player_last_name
+        shorted_name = player_first_name[0] + ". " + player_last_name
+        return player_first_name, player_last_name, shorted_name
 
     def downloader_manager(self):
         yesterday_date = self.get_date()

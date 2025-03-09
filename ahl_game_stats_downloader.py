@@ -21,33 +21,42 @@ class AhlGameDownloader(NhlGameDownloader):
     def __init__(self, last_game_url, dtb_teams, dtb_ih_games, my_dtb_driver, downloader_controller):
         super().__init__(dtb_teams, dtb_ih_games, my_dtb_driver, downloader_controller)
         self.last_game_url = last_game_url
+        self.next_game_check = 0
 
     def ahl_game_manager(self):
         while True:
             game_url = self.get_new_game_url(self.last_game_url)
             print(game_url)
             self.downloader_controller.playwright_starter()
-            returned_html_content = self.downloader_controller.get_page_content(game_url)
-            returned_soup = self.downloader_controller.soup_maker(returned_html_content)
-            availability_result = self.game_availability(returned_soup)
+            # returned_html_content = self.downloader_controller.get_page_content(game_url)
+            page_result = self.downloader_controller.load_page(game_url)
+            if page_result is True:
+                returned_html_content = self.downloader_controller.get_page_content()
+                returned_soup = self.downloader_controller.soup_maker(returned_html_content)
+                availability_result = self.game_availability(returned_soup)
 
-            if availability_result is True:
-                """V případě, že je hra dostupná, dojde k extrakci výsledku a statistik hráčů"""
-                game_id = self.get_game_id(game_url)
-                new_game = self.game_extractor(returned_soup, game_id)
-                print(new_game)
-                self.scraped_ih_games.append(new_game)
-                self.last_game_url = game_url
+                if availability_result is True:
+                    """V případě, že je hra dostupná, dojde k extrakci výsledku a statistik hráčů"""
+                    game_id = self.get_game_id(game_url)
+                    new_game = self.game_extractor(returned_soup, game_id)
+                    print(new_game)
+                    self.scraped_ih_games.append(new_game)
+                    self.last_game_url = game_url
 
-            elif availability_result is False and self.scraped_ih_games:
-                print(self.scraped_ih_games[-1].web_game_id)
-                last_game_url = "https://lscluster.hockeytech.com/game_reports/official-game-report.php?client_code=ahl&game_id=" + str(self.scraped_ih_games[-1].web_game_id) + "&lang_id=1"
-                self.my_dtb_driver.update_data("leagues", "schedule_url_source", last_game_url, "league_id", 2)
-                print(self.scraped_ih_games)
-                return self.scraped_ih_games
+                elif availability_result is False and self.scraped_ih_games and self.next_game_check == 3:
+                    print(self.scraped_ih_games[-1].web_game_id)
+                    last_game_url = "https://lscluster.hockeytech.com/game_reports/official-game-report.php?client_code=ahl&game_id=" + str(self.scraped_ih_games[-1].web_game_id) + "&lang_id=1"
+                    self.my_dtb_driver.update_data("leagues", "schedule_url_source", last_game_url, "league_id", 2)
+                    print(self.scraped_ih_games)
+                    self.downloader_controller.playwright_termination()
+                    return self.scraped_ih_games
 
-            elif availability_result is False and not self.scraped_ih_games:
-                return False
+                elif availability_result is False and not self.scraped_ih_games and self.next_game_check == 3:
+                    return False
+
+                else:
+                    print(f"Tato hra nebyla odehrána: {game_url}")
+                    self.last_game_url = game_url
 
     def get_season_stage(self, table, league_id_value, season_value, home_team_id_value, away_team_id_value, max_num_of_games_per_team):
         num_of_games_in_season = self.my_dtb_driver.get_num_of_all_team_games_in_season(table, league_id_value, season_value, home_team_id_value, away_team_id_value)
@@ -62,6 +71,7 @@ class AhlGameDownloader(NhlGameDownloader):
         body_text = returned_soup.find("body").text
 
         if body_text == "This game is not available.":
+            self.next_game_check += 1
             return False
         else:
             return True
@@ -120,7 +130,7 @@ class AhlGameDownloader(NhlGameDownloader):
 
         game_result_type = self.result_type_finder(general_info)
 
-        winner_team_id = self.get_winner_team(dtb_home_team, home_team_scraped_goals, dtb_away_team, away_team_scraped_goals)
+        winner_team_id = self.get_winner_team(home_team_id, home_team_scraped_goals, away_team_id, away_team_scraped_goals)
 
         game_date = self.get_game_date(game_soup)
         game_date_dtb_format = self.game_date_dtb_formatter(game_date)
@@ -128,21 +138,38 @@ class AhlGameDownloader(NhlGameDownloader):
 
         season_stage = self.get_season_stage("ih_games",  2, season, home_team_id, away_team_id, 72)
 
-        tables = game_soup.find_all("table", class_ = "tSidesC")
+        # tables = game_soup.find_all("table", class_ = "tSidesC")
 
-        away_team_players = self.players_extractor(tables[0], dtb_away_team, season)
-        home_team_players = self.players_extractor(tables[2], dtb_home_team, season)
+        td_tables = game_soup.find_all("td", {"valign":"top", "width":"255"})
+        home_team_players_tables = td_tables[0].find_all("table")
+        away_team_players_tables = td_tables[1].find_all("table")
+
+        home_team_field_players_table = home_team_players_tables[0]
+        away_team_field_players_table = away_team_players_tables[0]
+
+        home_team_goalies_table = home_team_players_tables[1]
+        away_team_goalies_table = away_team_players_tables[1]
+
+        away_team_players = self.players_extractor(home_team_field_players_table, dtb_away_team, season)
+        home_team_players = self.players_extractor(away_team_field_players_table, dtb_home_team, season)
         all_skaters_stats_list = away_team_players + home_team_players
 
-        away_team_goalies = self.goalies_extractor(tables[1], dtb_away_team, season)
+        away_team_goalies = self.goalies_extractor(home_team_goalies_table, dtb_away_team, season)
         print(f"Brakáři venkovního týmu: {away_team_goalies}")
 
-        home_team_goalies = self.goalies_extractor(tables[3], dtb_home_team, season)
+        home_team_goalies = self.goalies_extractor(away_team_goalies_table, dtb_home_team, season)
         print(f"Brakáři domácího týmu: {home_team_goalies}")
         all_goalies_stats_list = away_team_goalies + home_team_goalies
 
 
         new_game = ih_games.IhGames(home_team_id, away_team_id, home_team_scraped_goals, away_team_scraped_goals, game_result_type, 2, winner_team_id, game_date_dtb_format, season, season_stage, game_id, all_skaters_stats_list, all_goalies_stats_list)
+        print(f"Home_team_id: {new_game.home_team_id}, Away_team_id: {away_team_id}, home_team_goals: {home_team_scraped_goals}, away_team_goals: {away_team_scraped_goals}, game_result_type: {game_result_type}, winner_team_id: {winner_team_id}, gaame_date_dtb_format: {game_date_dtb_format}, season: {season}, season_stage: {season_stage}, game_id: {game_id}")
+
+        for goalie in all_goalies_stats_list:
+            print(f"goalie_id: {goalie.player_id}, goalie_toi: {goalie.toi}, goalie_team_id: {goalie.team_id}, goalie_season: {goalie.season}, goalie_shots: {goalie.shots}, goalie_saves: {goalie.saves}, goalie_save_percentage: {goalie.save_percentage}, goalie_has_played: {goalie.has_played}")
+
+        for player in all_skaters_stats_list:
+            print(f"player_id: {player.player_id}, player_goals: {player.goals}, player_assists: {player.assists}, player_points: {player.points}, player_plus_minus: {player.plus_minus}, player_pim: {player.pim}, player_sog: {player.sog}, player_hits: {player.hits}, player_ppg: {player.ppg}, player_toi: {player.toi}, player_face_off_percentage: {player.face_off_percentage}, player_team_id: {player.team_id}, player_player_blocked_shots: {player.player_blocked_shots}, player_season: {player.season}")
         return new_game
 
     def goalies_stats_extractor(self, td_list, dtb_team, season):
@@ -200,7 +227,9 @@ class AhlGameDownloader(NhlGameDownloader):
         list_of_trs = table.find_all("tr")
         for tr in list_of_trs[2:][:-2]:
             td_list = tr.find_all("td")
-            if td_list[0].text != "G":
+            if td_list[0].text.strip() == "":
+                continue
+            elif td_list[0].text.strip() != "G":
                 new_player = self.player_stats_extractor(td_list, dtb_team, season)
                 list_of_players.append(new_player)
             else:

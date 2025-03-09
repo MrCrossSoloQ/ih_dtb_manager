@@ -93,11 +93,12 @@ def main_menu(my_dtb_driver):
                 elif inner_choice == 1:
                     dtb_returned_leagues = my_dtb_driver.get_data_simple("leagues")
                     nhl_league_schedule_url = dtb_returned_leagues[0]["schedule_url_source"]
+                    print(nhl_league_schedule_url)
                     dtb_returned_teams = my_dtb_driver.get_data_on_simple_condition("teams", "league_id", 1)
                     dtb_returned_games = my_dtb_driver.get_data_on_simple_condition("ih_games", "league_id", 1)
 
                     downloader_controller = data_downloader.PlaywrightController()
-                    nhl = nhl_game_stats_downloader.NhlGameDownloader(nhl_league_schedule_url, dtb_returned_teams, dtb_returned_games, my_dtb_driver, downloader_controller)
+                    nhl = nhl_game_stats_downloader.NhlGameDownloader(dtb_returned_teams, dtb_returned_games, my_dtb_driver, downloader_controller, nhl_league_schedule_url)
                     scraped_games = nhl.downloader_manager()
                     print(scraped_games)
 
@@ -137,17 +138,17 @@ def main_menu(my_dtb_driver):
                     else:
 
                         ahl_duplicity = duplicity_checker.DuplicityChecker(dtb_returned_games, scraped_ahl_games, my_dtb_driver)
-                        # ahl_duplicity.dtb_game_duplicity_check()
+                        ahl_duplicity.dtb_game_duplicity_check()
 
-                        # dtb_returned_games = my_dtb_driver.get_data_simple("ih_games")
-                        # dtb_returned_players_game_sheet = my_dtb_driver.get_data_simple("player_game_sheet")
-                        # dtb_returned_goalies_game_sheet = my_dtb_driver.get_data_simple("goalie_game_sheet")
-                        #
-                        # p_duplicity = duplicity_checker.GameSheetDuplicityChecker(dtb_returned_players_game_sheet, dtb_returned_games, scraped_ahl_games, my_dtb_driver)
-                        # p_duplicity.dtb_duplicity_game_sheet_check("player_game_sheet")
-                        #
-                        # goalies_duplicity_object = duplicity_checker.GameSheetDuplicityChecker(dtb_returned_goalies_game_sheet, dtb_returned_games, scraped_ahl_games, my_dtb_driver)
-                        # goalies_duplicity_object.dtb_duplicity_game_sheet_check("goalie_game_sheet")
+                        dtb_returned_games = my_dtb_driver.get_data_simple("ih_games")
+                        dtb_returned_players_game_sheet = my_dtb_driver.get_data_simple("player_game_sheet")
+                        dtb_returned_goalies_game_sheet = my_dtb_driver.get_data_simple("goalie_game_sheet")
+
+                        p_duplicity = duplicity_checker.GameSheetDuplicityChecker(dtb_returned_players_game_sheet, dtb_returned_games, scraped_ahl_games, my_dtb_driver)
+                        p_duplicity.dtb_duplicity_game_sheet_check("player_game_sheet")
+
+                        goalies_duplicity_object = duplicity_checker.GameSheetDuplicityChecker(dtb_returned_goalies_game_sheet, dtb_returned_games, scraped_ahl_games, my_dtb_driver)
+                        goalies_duplicity_object.dtb_duplicity_game_sheet_check("goalie_game_sheet")
 
             elif user_choice == 4:
                 """Volba č. 4 pouze pro testování"""

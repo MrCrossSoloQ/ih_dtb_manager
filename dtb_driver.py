@@ -12,13 +12,24 @@ class DtbDriver:
         self.password = password
 
     def connection_maker(self):
-        if self.connection is None:
-            self.connection = psycopg2.connect(
-                host = self.host,
-                database = self.database,
-                user = self.user,
-                password = self.password
-            )
+        try:
+            if self.connection is None:
+                self.connection = psycopg2.connect(
+                    host = self.host,
+                    database = self.database,
+                    user = self.user,
+                    password = self.password
+                )
+        except psycopg2.OperationalError as e:
+            self.close_cursor()
+            self.dtb_disconnection()
+            print(f"Chyba při připoujení k databázi: {e}")
+            raise RuntimeError("Nepodařilo se připojit k DTB")
+        except psycopg2.Error as e:
+            self.close_cursor()
+            self.dtb_disconnection()
+            print(f"Obecná chyba psycopg2: {e}")
+            raise RuntimeError("Nepodařilo se připojit k DTB")
 
     def cursor_maker(self):
         if self.connection and self.cursor is None:
@@ -26,12 +37,14 @@ class DtbDriver:
             return self.cursor
 
     def dtb_disconnection(self):
-        self.connection.close()
-        self.connection = None
+        if self.connection:
+            self.connection.close()
+            self.connection = None
 
     def close_cursor(self):
-        self.cursor.close()
-        self.cursor = None
+        if self.cursor:
+            self.cursor.close()
+            self.cursor = None
 
     def get_data_simple(self, choosen_table):
         self.connection_maker()
@@ -70,6 +83,32 @@ class DtbDriver:
         self.connection.commit()
 
         self.close_cursor()
+
+    def insert_data_and_return_id(self, choosen_table, columns, values, column_id_name):
+        self.connection_maker()
+        self.cursor_maker()
+
+        my_query = sql.SQL(
+            """
+            INSERT INTO {table}({columns})
+                VALUES({values})
+            RETURNING {column_id_name}
+            """
+        ).format(
+            table=sql.Identifier(choosen_table),
+            columns=sql.SQL(",").join(map(sql.Identifier, columns)),
+            values=sql.SQL(",").join(map(sql.Literal, values)),
+            column_id_name = sql.Identifier(column_id_name),
+
+        )
+
+        self.cursor.execute(my_query)
+        self.connection.commit()
+        new_id = self.cursor.fetchall()
+        print(f"Vrácené ID nového hráče v SQL dotazu: {new_id}")
+        self.close_cursor()
+
+        return new_id
 
     def get_data_join_condition_results(self, table_a, table_b, column_t_a, column_t_b, column_t_b2, condition_column, value):
         self.connection_maker()
