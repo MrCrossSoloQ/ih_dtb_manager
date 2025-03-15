@@ -7,8 +7,6 @@ from difflib import get_close_matches
 import goalie_game_sheet
 import player_game_sheet
 import player
-import os
-from dotenv import load_dotenv
 # import json
 
 class NhlGameDownloader:
@@ -20,16 +18,16 @@ class NhlGameDownloader:
         self.my_dtb_driver = my_dtb_driver
         self.downloader_controller = downloader_controller
         self.scraped_ih_games = []
+        self.yesterday_date_only = None
 
     def get_date(self):
         """Vygeneruje dnešní datum a po odečtu vrátí včerejší"""
         today = datetime.today()
-        yesterday_date_only = today.date() - timedelta(days=1)
-        return yesterday_date_only
+        self.yesterday_date_only = today.date() - timedelta(days=1)
 
-    def get_schedule_url(self, yesterday_date_only, league_url_source):
+    def get_schedule_url(self, league_url_source):
         """Spojením url + včerejšího data, vrátí url s výsledky včerejších zápasů + rozpis zápasů na 7 dní"""
-        yesterday_game_sheet_url = urljoin(league_url_source, str(yesterday_date_only))
+        yesterday_game_sheet_url = urljoin(league_url_source, str(self.yesterday_date_only))
         return yesterday_game_sheet_url
 
     def url_content_downloader(self, url):
@@ -38,11 +36,11 @@ class NhlGameDownloader:
         data = response.json()  # pokud server vrátí obsah stránky ve formátu json, převedeme je na dictionary
         return data
 
-    def todays_games(self, data, date):
+    def todays_games(self, data):
         """Funkce která nám získá id her, které byly odehrány pouze za včerejšího data a vrátí nám je jako list"""
         game_ids = []
         for gameweek in data["gameWeek"]:
-            if gameweek["date"] == str(date):
+            if gameweek["date"] == str(self.yesterday_date_only):
                 for game in gameweek["games"]:
                     game_ids.append(game["id"])
 
@@ -168,6 +166,7 @@ class NhlGameDownloader:
         return corrected_team_name
 
     def goalies_stats_sheet(self, list_of_goalies, dtb_team, season):
+        """Získání všech statistik golmanů v daném zápase a následně vytvoření objektu goalie_game_stats a vložení do listu"""
         goalies_stats_list = []
         # print(json.dumps(list_of_goalies, indent=4))
         for goalie in list_of_goalies:
@@ -181,6 +180,8 @@ class NhlGameDownloader:
                 goalie_game_stats = goalie_game_sheet.GoalieGameSheet(player_id, goalie_toi_transfered,
                                                                       dtb_team["team_id"], season, 0, 0, 0.00, False)
                 goalies_stats_list.append(goalie_game_stats)
+                if player_id is None:
+                    self.create_log_file_goalies(goalie_game_stats)
             else:
                 goalie_shots = goalie["shotsAgainst"]
                 goalie_saves = goalie["saves"]
@@ -189,6 +190,8 @@ class NhlGameDownloader:
                 player_id = self.get_player_id(goalie_name, dtb_team, jersey_num)
                 goalie_game_stats = goalie_game_sheet.GoalieGameSheet(player_id, goalie_toi_transfered, dtb_team["team_id"], season, goalie_shots, goalie_saves, goalie_save_percentage, True)
                 goalies_stats_list.append(goalie_game_stats)
+                if player_id is None:
+                    self.create_log_file_goalies(goalie_game_stats)
         return goalies_stats_list
 
     def player_stats_sheet(self, list_of_players, dtb_team, season):
@@ -227,7 +230,23 @@ class NhlGameDownloader:
 
             print(player_name, player_goals, player_assists, player_points, player_plus_minus, player_pim_adjusted,
                   player_sog, player_hits, player_ppg, player_toi_adjusted, player_faceoff, player_blocked_shots)
+
+            if dtb_player_id is None:
+                self.create_log_file_players(player_stats)
+
         return players_stats_list
+
+    def create_log_file_players(self, player_stats):
+        """Vytvoří soubor, do kterého zapíše staty hráče v poli, který nebyl stotožněn s žádným hráčem v DTB nebo na eliteprospects.com"""
+        file_name = rf"C:\Users\tomas\Desktop\Python\Projekty\TrackThePlayers\unmached_players\{self.yesterday_date_only}_players.txt"
+        with open(file_name, "a", encoding="utf-8") as log_file:
+            log_file.write(f"{player_stats.player_name} | {player_stats.player_goals} | {player_stats.player_assists} | {player_stats.player_points} | {player_stats.player_plus_minus} | {player_stats.player_pim_adjusted} | {player_stats.player_sog} | {player_stats.player_hits} | {player_stats.player_ppg} | {player_stats.player_toi_adjusted} | {player_stats.player_faceoff} | {player_stats.player_blocked_shots}\n")
+
+    def create_log_file_goalies(self, goalie_game_stats):
+        """Vytvoří soubor, do kterého zapíše staty brankáře, který nebyl stotožněn s žádným hráčem v DTB nebo na eliteprospects.com"""
+        file_name = rf"C:\Users\tomas\Desktop\Python\Projekty\TrackThePlayers\unmached_players\{self.yesterday_date_only}_goalies.txt"
+        with open(file_name, "a", encoding="utf-8") as log_file:
+            log_file.write(f"{goalie_game_stats.goalie_name} | {goalie_game_stats.goalie_toi_transfered} | {goalie_game_stats.dtb_team} | {goalie_game_stats.season} | {goalie_game_stats.goalie_shots} | {goalie_game_stats.goalie_saves} | {goalie_game_stats.goalie_save_percentage} | {goalie_game_stats.played}\n")
 
     def time_transfer(self, time):
         minutes = str(time)[:2]
@@ -428,10 +447,10 @@ class NhlGameDownloader:
         return player_first_name, player_last_name, shorted_name
 
     def downloader_manager(self):
-        yesterday_date = self.get_date()
-        schedule_url = self.get_schedule_url(yesterday_date, self.league_schedule_url)
+        self.get_date()
+        schedule_url = self.get_schedule_url(self.league_schedule_url)
         url_content = self.url_content_downloader(schedule_url)
-        list_of_game_ids = self.todays_games(url_content, yesterday_date)
+        list_of_game_ids = self.todays_games(url_content)
         if not list_of_game_ids:
             return False
         list_of_game_urls = self.url_maker_game_stats(list_of_game_ids)

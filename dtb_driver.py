@@ -1,6 +1,7 @@
 import psycopg2
 import psycopg2.extras
 from psycopg2 import sql
+from datetime import datetime, timedelta
 
 class DtbDriver:
     def __init__(self, host, database, user, password):
@@ -10,6 +11,7 @@ class DtbDriver:
         self.database = database
         self.user = user
         self.password = password
+        self.yesterday_date_only = None
 
     def connection_maker(self):
         try:
@@ -46,6 +48,11 @@ class DtbDriver:
             self.cursor.close()
             self.cursor = None
 
+    def get_date(self):
+        """Vygeneruje dnešní datum a po odečtu vrátí včerejší"""
+        today = datetime.today()
+        self.yesterday_date_only = today.date() - timedelta(days=1)
+
     def get_data_simple(self, choosen_table):
         self.connection_maker()
         self.cursor_maker()
@@ -79,10 +86,19 @@ class DtbDriver:
             values=sql.SQL(",").join(map(sql.Literal, values))
         )
 
-        self.cursor.execute(my_query)
-        self.connection.commit()
+        try:
+            self.cursor.execute(my_query)
+            self.connection.commit()
+        except psycopg2.DatabaseError as e:
+            print(f"Při vkládání do DTB, došlo k chybě {e}")
+            self.connection.rollback()
 
-        self.close_cursor()
+            self.get_date()
+            file_path = rf"C:\Users\tomas\Desktop\Python\Projekty\TrackThePlayers\uninserted_data\{self.yesterday_date_only}.txt"
+            with open(file_path, "a", encoding="utf-8") as file:
+                file.write(",".join(map(str, values)) + "\n")
+        finally:
+            self.close_cursor()
 
     def insert_data_and_return_id(self, choosen_table, columns, values, column_id_name):
         self.connection_maker()
@@ -102,13 +118,25 @@ class DtbDriver:
 
         )
 
-        self.cursor.execute(my_query)
-        self.connection.commit()
-        new_id = self.cursor.fetchall()
-        print(f"Vrácené ID nového hráče v SQL dotazu: {new_id}")
-        self.close_cursor()
+        try:
+            self.cursor.execute(my_query)
+            self.connection.commit()
+            new_id_list = self.cursor.fetchall()
+            print(f"Vrácené ID nového hráče v SQL dotazu: {new_id_list}")
+            dtb_player_id = new_id_list[0]["player_id"]
+            print(f"Upřesněné ID: {dtb_player_id}")
+            return dtb_player_id
 
-        return new_id
+        except psycopg2.DatabaseError as e:
+            print(f"Chyba při vložení nebo návratu z DTB {e}")
+            self.connection.rollback()
+
+            self.get_date()
+            file_path = rf"C:\Users\tomas\Desktop\Python\Projekty\TrackThePlayers\uninserted_data"
+            with open(file_path, "a", encoding="utf-8") as file:
+                file.write(",".join(map(str, values)) + "\n")
+        finally:
+            self.close_cursor()
 
     def get_data_join_condition_results(self, table_a, table_b, column_t_a, column_t_b, column_t_b2, condition_column, value):
         self.connection_maker()

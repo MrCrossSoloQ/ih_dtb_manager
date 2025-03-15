@@ -52,6 +52,7 @@ class AhlGameDownloader(NhlGameDownloader):
                     return self.scraped_ih_games
 
                 elif availability_result is False and not self.scraped_ih_games and self.next_game_check == 3:
+                    self.downloader_controller.playwright_termination()
                     return False
 
                 else:
