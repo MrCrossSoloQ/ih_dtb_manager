@@ -192,7 +192,7 @@ class DtbDriver:
 
         self.close_cursor()
 
-    def get_full_game_info_on_optional_date(self, choosen_date):
+    def get_full_game_info_on_optional_date(self, choosen_date, league_id_value):
         self.connection_maker()
         self.cursor_maker()
 
@@ -203,10 +203,11 @@ class DtbDriver:
                 ON ih_games.home_team_id = home_teams.team_id
                 JOIN teams AS away_teams
                 ON  ih_games.away_team_id = away_teams.team_id
-                WHERE match_date = {date_value}
+                WHERE match_date = {date_value} AND ih_games.league_id = {league_id_value}
             """
         ).format(
-            date_value=sql.Literal(choosen_date)
+            date_value=sql.Literal(choosen_date),
+            league_id_value = sql.Literal(league_id_value),
         )
 
         self.cursor.execute(my_query)
