@@ -214,7 +214,7 @@ class NhlGameDownloader:
 
             dtb_team_id = dtb_team["team_id"]
 
-            player_pim_adjusted = self.time_transfer(player_pim)
+            player_pim_adjusted = int(player_pim)
             player_toi_adjusted = self.time_transfer(player_toi)
 
             print(f"player_stats_sheet: {dtb_team}")
@@ -249,9 +249,11 @@ class NhlGameDownloader:
             log_file.write(f"{goalie_game_stats.goalie_name} | {goalie_game_stats.goalie_toi_transfered} | {goalie_game_stats.dtb_team} | {goalie_game_stats.season} | {goalie_game_stats.goalie_shots} | {goalie_game_stats.goalie_saves} | {goalie_game_stats.goalie_save_percentage} | {goalie_game_stats.played}\n")
 
     def time_transfer(self, time):
-        minutes = str(time)[:2]
-        seconds = str(time)[3:]
-        interval_format = f"{minutes}:{seconds:02}"
+        print(time)
+        word_list = str(time).split(":")
+        print(word_list)
+        minutes, seconds = word_list[0], word_list[1]
+        interval_format = f"{minutes}:{seconds}"
         print(interval_format)
         return interval_format
 

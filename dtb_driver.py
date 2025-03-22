@@ -1,3 +1,5 @@
+from re import fullmatch
+
 import psycopg2
 import psycopg2.extras
 from psycopg2 import sql
@@ -216,7 +218,7 @@ class DtbDriver:
         self.close_cursor()
         return recieved_data
 
-    def get_player_game_stats(self, game_id):
+    def get_player_game_stats(self, game_id, nationality):
         self.connection_maker()
         self.cursor_maker()
 
@@ -231,7 +233,16 @@ class DtbDriver:
             chosen_game_id = sql.Literal(game_id)
         )
 
-        self.cursor.execute(my_query)
+        if nationality:
+            adjusted_my_query = sql.SQL(" AND nationality = {nationality_value}").format(
+                nationality_value = sql.Literal(nationality)
+            )
+            full_query = my_query + adjusted_my_query
+
+        else:
+            full_query = my_query
+
+        self.cursor.execute(full_query)
         recieved_data = self.cursor.fetchall()
 
         self.close_cursor()
